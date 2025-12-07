@@ -1,0 +1,190 @@
+AI Fraud Shield – Full Production-Ready Implementation"
+
+You are an expert full-stack developer. Your task is to fully build a production-ready AI security system called AI Fraud Shield, including all frontend and backend components, all pages, logic, and UI. The system monitors and analyzes user login behavior in real-time to detect fraud and automatically trigger security responses.
+
+1️⃣ Core Concept (Clearly Defined)
+
+AI Fraud Shield detects fraud during login by analyzing behavioral and contextual anomalies:
+
+Device drift (changes in user device)
+
+Geo-location drift (login from unusual regions)
+
+Typing behavior deviation (speed/keystroke patterns)
+
+Login time anomaly (outside typical login window)
+
+Login attempts frequency (too many attempts)
+
+Comparison with baseline user behavior
+
+The system computes a Risk Score (0–100) and triggers a Decision: Allow / Alert / Challenge / Block.
+
+2️⃣ Functional Requirements
+
+You must implement all the following components with full functionality:
+
+A) Behavior Analysis Breakdown Panel
+
+Display per login attempt:
+
+Device Drift Score
+
+Geo Drift Score
+
+Typing Drift Score
+
+Login Time Anomaly
+
+Attempts Count Score
+
+Final Risk Score
+
+Explanation of decision
+
+UI Example:
+
+Risk Breakdown:
+- Device drift: +30
+- Geo drift: +25
+- Typing drift: +25
+- Attempts multiplier: +10
+- Time anomaly: +10
+Final Score: 100 (Critical)
+Decision: BLOCK
+
+B) Baseline User Behavioral Profile Page
+
+Show for each user:
+
+Primary device
+
+Primary region
+
+Average typing speed
+
+Typical login window
+
+Risk history graph
+
+Drift % vs current session
+
+C) Event Logs Page (SIEM-style)
+
+Table with columns: Timestamp | User | Device | Geo | Risk | Decision | Reason | Latency
+
+Support filtering, severity colors, badges
+
+D) User Risk History Page
+
+Timeline of user's risk over time
+
+Line chart of Risk Score
+
+List of past login events
+
+Severity categories
+
+E) Security Response Rules Page
+
+Admin page to configure rules:
+
+Block if risk > X
+
+Challenge if risk > Y
+
+Alert if risk > Z
+
+Allow if risk <= Z
+
+Include toggles/sliders/save functionality
+
+F) Real-Time Risk Simulator Page
+
+Inputs: Device, Geo, Typing speed slider, Login attempts, Time of day
+
+Outputs: Real-time Risk Score, Decision, Full breakdown
+
+G) Enhanced Dashboard
+
+Risk distribution graph
+
+Geographic login map
+
+Device type statistics
+
+Top risky users
+
+Real-time event feed
+
+3️⃣ Frontend Requirements
+
+React (Next.js or Vite)
+
+TailwindCSS
+
+Recharts for charts/graphs
+
+Dark-themed, modern, clean UI
+
+Reusable components
+
+Fully responsive
+
+4️⃣ Backend Requirements
+
+Node.js + Express
+
+REST API Endpoints:
+
+/api/risk/calc → returns risk score + breakdown
+
+/api/risk/simulate → for simulator
+
+/api/logs → returns event logs
+
+/api/user/:id/baseline
+
+/api/user/:id/risk-history
+
+/api/rules → get/update security rules
+
+Fully implement risk scoring logic based on inputs
+
+5️⃣ Data Requirements
+
+Include default datasets (users.json, logs.json, rules.json) for demo/testing
+
+Support extension to database (optional)
+
+Preload sample users and login events
+
+6️⃣ Delivery Requirements
+
+You must output everything needed for a fully working project:
+
+Full folder structure
+
+All frontend React components
+
+All backend endpoints
+
+All pages fully implemented
+
+No placeholders, all logic implemented
+
+Fully working project ready to run locally
+
+Include sample data for testing
+
+7️⃣ Optional Enhancements
+
+Admin can modify baseline values
+
+Real-time feed updates automatically
+
+Color-coded severity in all logs/pages
+
+Reusable UI components (cards, tables, graphs, sliders, modals)
+
+Goal: Deliver a 100% complete, fully functional AI Fraud Shield system ready for deployment, testing, or demonstration, with no missing parts or placeholders.
