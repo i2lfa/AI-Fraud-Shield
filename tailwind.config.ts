@@ -81,6 +81,13 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        risk: {
+          critical: "hsl(var(--risk-critical) / <alpha-value>)",
+          high: "hsl(var(--risk-high) / <alpha-value>)",
+          medium: "hsl(var(--risk-medium) / <alpha-value>)",
+          low: "hsl(var(--risk-low) / <alpha-value>)",
+          safe: "hsl(var(--risk-safe) / <alpha-value>)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
