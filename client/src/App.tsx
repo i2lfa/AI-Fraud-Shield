@@ -16,7 +16,6 @@ import UserDetail from "@/pages/user-detail";
 import BehaviorAnalysis from "@/pages/behavior-analysis";
 import SecurityRules from "@/pages/security-rules";
 import Login from "@/pages/login";
-import SideLogin from "@/pages/side-login";
 import UserDashboard from "@/pages/user-dashboard";
 import AdminPanel from "@/pages/admin-panel";
 
@@ -24,7 +23,6 @@ function PublicRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/side-login" component={SideLogin} />
       <Route component={Login} />
     </Switch>
   );

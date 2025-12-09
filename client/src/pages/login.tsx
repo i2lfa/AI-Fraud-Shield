@@ -256,23 +256,6 @@ export default function Login() {
             </Button>
           </form>
           
-          <div className="mt-6 pt-6 border-t text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Demo Credentials:
-            </p>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p><span className="font-medium">User:</span> john.smith / password123</p>
-              <p><span className="font-medium">Admin:</span> admin / admin123</p>
-            </div>
-            <Button
-              variant="link"
-              className="text-sm"
-              onClick={() => setLocation("/side-login")}
-              data-testid="link-side-login"
-            >
-              Use alternative login page
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
