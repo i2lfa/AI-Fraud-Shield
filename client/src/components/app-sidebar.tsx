@@ -12,7 +12,6 @@ import {
   Lock,
   Home,
   Brain,
-  Building2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,11 +56,6 @@ const mainItems = [
     title: "AI Model Playground",
     url: "/model-playground",
     icon: Brain,
-  },
-  {
-    title: "Company Portal",
-    url: "/real-login",
-    icon: Building2,
   },
 ];
 
