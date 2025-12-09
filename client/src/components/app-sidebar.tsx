@@ -13,6 +13,7 @@ import {
   Home,
   Brain,
   Fingerprint,
+  Building2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +63,11 @@ const mainItems = [
     title: "Real Login Simulation",
     url: "/real-login",
     icon: Fingerprint,
+  },
+  {
+    title: "Real Login (External Engine)",
+    url: "/real-login-external",
+    icon: Building2,
   },
 ];
 
