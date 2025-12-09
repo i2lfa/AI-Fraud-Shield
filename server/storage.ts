@@ -283,7 +283,10 @@ export class MemStorage implements IStorage {
   }
 
   async getAuthUser(username: string): Promise<AuthUser | undefined> {
-    return this.authUsers.get(username);
+    const lowerUsername = username.toLowerCase();
+    return Array.from(this.authUsers.values()).find(
+      u => u.username.toLowerCase() === lowerUsername
+    );
   }
 
   async getAuthUserById(id: string): Promise<AuthUser | undefined> {
