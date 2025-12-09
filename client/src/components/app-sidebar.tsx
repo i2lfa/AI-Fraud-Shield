@@ -12,7 +12,6 @@ import {
   Lock,
   Home,
   Brain,
-  Fingerprint,
   Building2,
 } from "lucide-react";
 import {
@@ -60,13 +59,8 @@ const mainItems = [
     icon: Brain,
   },
   {
-    title: "Real Login Simulation",
+    title: "Company Portal Demo",
     url: "/real-login",
-    icon: Fingerprint,
-  },
-  {
-    title: "Real Login (External Engine)",
-    url: "/real-login-external",
     icon: Building2,
   },
 ];

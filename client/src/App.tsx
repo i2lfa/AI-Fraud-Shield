@@ -16,8 +16,7 @@ import UserDetail from "@/pages/user-detail";
 import BehaviorAnalysis from "@/pages/behavior-analysis";
 import SecurityRules from "@/pages/security-rules";
 import Login from "@/pages/login";
-import RealLogin from "@/pages/real-login";
-import RealLoginExternal from "@/pages/real-login-external";
+import RealLogin from "@/pages/real-login-external";
 import RealHome from "@/pages/real-home";
 import UserDashboard from "@/pages/user-dashboard";
 import AdminPanel from "@/pages/admin-panel";
@@ -28,7 +27,6 @@ function PublicRoutes() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/real-login" component={RealLogin} />
-      <Route path="/real-login-external" component={RealLoginExternal} />
       <Route component={Login} />
     </Switch>
   );
@@ -56,7 +54,7 @@ function ProtectedRoutes() {
 function AppContent() {
   const [location] = useLocation();
   
-  const isPublicRoute = location === "/login" || location === "/real-login" || location === "/real-login-external";
+  const isPublicRoute = location === "/login" || location === "/real-login";
   
   if (isPublicRoute) {
     return <PublicRoutes />;

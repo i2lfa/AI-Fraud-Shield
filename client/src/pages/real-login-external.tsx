@@ -96,7 +96,7 @@ export default function RealLoginExternal() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/real-login-external", data);
+      const response = await apiRequest("POST", "/api/real-login", data);
       return response.json();
     },
     onSuccess: (data) => {

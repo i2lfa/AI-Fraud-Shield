@@ -686,9 +686,9 @@ export async function registerRoutes(
     }
   });
 
-  // Real Login External - forwards to ALL systems (SIEM, Event Logs, Audit, etc.)
+  // Real Login - forwards to ALL systems (SIEM, Event Logs, Audit, etc.)
   // This endpoint processes ANY input and triggers the full fraud pipeline
-  app.post("/api/real-login-external", async (req, res) => {
+  app.post("/api/real-login", async (req, res) => {
     try {
       const { username, password, fingerprint, typingMetrics, pageLoadTime, submitTimestamp } = req.body;
       
@@ -802,7 +802,7 @@ export async function registerRoutes(
         reason: generateExplanation(breakdown, riskScore, decision),
         success: loginSuccess,
         requiresOtp: false,
-        loginSource: "real-login-external",
+        loginSource: "real-login",
         hiddenReason: `${hiddenReason} | AI: ${aiPrediction.score.toFixed(1)} | PageLoad: ${pageLoadTime}ms`,
       };
 
@@ -815,7 +815,7 @@ export async function registerRoutes(
       // Fan out to all monitoring systems (SIEM, Event Logs, Audit, WebSocket, Local Log)
       await fanOutLoginAttempt(externalAttempt);
 
-      console.log(`[ExternalLogin] User: ${usernameValue}, Risk: ${riskScore}, Decision: ${decision}, Success: ${loginSuccess}`);
+      console.log(`[RealLogin] User: ${usernameValue}, Risk: ${riskScore}, Decision: ${decision}, Success: ${loginSuccess}`);
 
       // Return ONLY success/failure - NO risk data exposed
       return res.json({ success: loginSuccess });
