@@ -437,6 +437,10 @@ export async function registerRoutes(
 
   app.get("/api/dashboard", async (req, res) => {
     try {
+      // Only admins can access dashboard with fraud statistics
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
       const stats = await storage.getDashboardStats();
       res.json(stats);
     } catch (error) {
@@ -446,6 +450,10 @@ export async function registerRoutes(
 
   app.get("/api/logs", async (req, res) => {
     try {
+      // Only admins can access full logs with fraud data
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
       const logs = await storage.getLogs();
       res.json(logs);
     } catch (error) {
@@ -455,6 +463,10 @@ export async function registerRoutes(
 
   app.get("/api/users", async (req, res) => {
     try {
+      // Only admins can access user list with baseline data
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
       const users = await storage.getUsers();
       res.json(users);
     } catch (error) {
@@ -477,7 +489,17 @@ export async function registerRoutes(
   app.get("/api/user/:id/risk-history", async (req, res) => {
     try {
       const logs = await storage.getLogsByUser(req.params.id);
-      res.json(logs);
+      // Filter out sensitive fraud data - only return safe info for regular users
+      const safeLogins = logs.map(log => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        device: log.device,
+        geo: log.geo,
+        decision: log.decision === "allow" || log.decision === "challenge" ? "allow" : log.decision,
+        success: log.success,
+        // All fraud-related fields are hidden from users
+      }));
+      res.json(safeLogins);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch risk history" });
     }
@@ -485,6 +507,10 @@ export async function registerRoutes(
 
   app.get("/api/rules", async (req, res) => {
     try {
+      // Only admins can access fraud detection rules
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
       const rules = await storage.getRules();
       res.json(rules);
     } catch (error) {
@@ -494,6 +520,10 @@ export async function registerRoutes(
 
   app.put("/api/rules", async (req, res) => {
     try {
+      // Only admins can modify fraud detection rules
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
       const parseResult = securityRulesSchema.safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json({ error: "Invalid rules data", details: parseResult.error });

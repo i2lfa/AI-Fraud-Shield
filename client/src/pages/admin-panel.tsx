@@ -239,7 +239,7 @@ export default function AdminPanel() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <RiskBadge level={attempt.riskLevel} score={attempt.riskScore} />
+                            <RiskBadge level={attempt.riskLevel} />
                             <div>
                               <p className="font-medium">{attempt.username}</p>
                               <p className="text-xs text-muted-foreground">

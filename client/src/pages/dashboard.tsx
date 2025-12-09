@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
 import { RiskBadge, DecisionBadge, RiskScore } from "@/components/risk-badge";
@@ -14,6 +16,7 @@ import {
   Laptop,
   Tablet
 } from "lucide-react";
+
 import {
   LineChart,
   Line,
@@ -128,10 +131,19 @@ function DeviceIcon({ type }: { type: string }) {
 }
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const [, setLocation] = useLocation();
+  
+  const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard"],
     refetchInterval: 3000, // Real-time updates every 3 seconds
   });
+
+  // Redirect non-admins to login (dashboard is admin-only)
+  useEffect(() => {
+    if (error) {
+      setLocation("/login");
+    }
+  }, [error, setLocation]);
 
   if (isLoading) {
     return (
@@ -149,12 +161,9 @@ export default function Dashboard() {
     );
   }
 
-  if (!stats) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Failed to load dashboard data</p>
-      </div>
-    );
+  if (!stats || error) {
+    setLocation("/login");
+    return null;
   }
 
   const riskDistData = [
