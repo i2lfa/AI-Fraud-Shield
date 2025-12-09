@@ -320,7 +320,11 @@ export class MemStorage implements IStorage {
       attempts: 0,
     };
     this.otpSessions.set(session.id, session);
-    console.log(`[OTP] Generated code ${code} for user ${userId} (session: ${session.id})`);
+    console.log(`\n${"=".repeat(50)}`);
+    console.log(`🔐 OTP CODE: ${code}`);
+    console.log(`   User: ${userId}`);
+    console.log(`   Session: ${session.id}`);
+    console.log(`${"=".repeat(50)}\n`);
     return session;
   }
 
