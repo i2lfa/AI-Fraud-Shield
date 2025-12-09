@@ -46,13 +46,26 @@ Preferred communication style: Simple, everyday language.
 - **Dark Mode First**: Theme system with light/dark mode toggle, defaulting to dark
 
 ### Application Pages
-- **Dashboard**: Overview stats, risk distribution charts, recent events
+- **Dashboard**: Overview stats, risk distribution charts, recent events (admin only)
 - **Event Logs**: Paginated, filterable log table with search
 - **Risk Simulator**: Interactive tool to test risk calculations with various parameters
 - **User Profiles**: List of monitored users with risk history
 - **User Detail**: Individual user baseline data and login history
 - **Behavior Analysis**: Detailed drift analysis comparing current vs baseline
 - **Security Rules**: Configurable thresholds for risk decisions
+- **Admin Panel**: Admin security dashboard with login attempts, hidden fraud rules, analytics, fingerprints, and AI Model tab
+- **User Dashboard**: User-facing dashboard with account status (no fraud data visible)
+- **Real Login** (`/real-login`): Production-grade login with silent ML-based fraud detection
+- **Real Home** (`/real-home`): User home after successful real-login
+
+### Machine Learning Model
+- **Location**: `server/ml-model.ts`
+- **Algorithm**: Isolation Forest-inspired anomaly detection
+- **Features**: Typing dynamics, device fingerprint, geo analysis, velocity scoring, time analysis, bot detection
+- **Training**: Auto-retrains after 50 new samples; initialized with 70 seed samples
+- **Metrics**: Accuracy, Precision, Recall, F1 Score tracked in model state
+- **Integration**: ML score weighted at 30% of total risk score in real-login flow
+- **Admin Controls**: Retrain and Export buttons in AI Model Dashboard tab
 
 ## External Dependencies
 
@@ -71,3 +84,32 @@ Preferred communication style: Simple, everyday language.
 ### Development Tools
 - **Replit Plugins**: Runtime error overlay, cartographer, dev banner (development only)
 - **Google Fonts**: Inter (primary), JetBrains Mono (monospace)
+
+## Authentication
+
+### Login Endpoints
+- `/login` - Standard login with OTP verification for high-risk attempts
+- `/real-login` - Production login with silent ML-based fraud detection (no risk data exposed)
+
+### Test Accounts
+- **Admin**: username: `admin`, password: `admin123`, role: `admin`
+- **User**: username: `john`, password: `password123`, role: `user`
+
+### OTP System
+- OTP codes printed to server console: `[OTP] Generated code XXXXXX`
+- Required when risk score triggers "challenge" decision
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - Standard login
+- `POST /api/auth/real-login` - Production login with ML scoring
+- `POST /api/auth/verify-otp` - OTP verification
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/me` - Current user info
+
+### Admin Only
+- `GET /api/admin/login-attempts` - All login attempts with full fraud data
+- `GET /api/admin/model/status` - ML model status and metrics
+- `POST /api/admin/model/retrain` - Force model retrain
+- `GET /api/admin/model/export` - Export model as JSON

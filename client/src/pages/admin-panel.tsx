@@ -27,9 +27,14 @@ import {
   Bot,
   MapPin,
   Keyboard,
+  Brain,
+  RefreshCw,
+  Download,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -96,8 +101,13 @@ export default function AdminPanel() {
     },
   });
 
+  useEffect(() => {
+    if (error || (user && user.role !== "admin")) {
+      setLocation("/login");
+    }
+  }, [error, user, setLocation]);
+
   if (error || (user && user.role !== "admin")) {
-    setLocation("/login");
     return null;
   }
 
@@ -206,11 +216,12 @@ export default function AdminPanel() {
       </div>
 
       <Tabs defaultValue="attempts" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="attempts" data-testid="tab-attempts">Login Attempts</TabsTrigger>
           <TabsTrigger value="hidden-rules" data-testid="tab-hidden-rules">Hidden Fraud Rules</TabsTrigger>
           <TabsTrigger value="analytics" data-testid="tab-analytics">Analytics</TabsTrigger>
           <TabsTrigger value="fingerprints" data-testid="tab-fingerprints">Device Fingerprints</TabsTrigger>
+          <TabsTrigger value="ai-model" data-testid="tab-ai-model">AI Model</TabsTrigger>
         </TabsList>
 
         <TabsContent value="attempts" className="space-y-4">
@@ -535,7 +546,289 @@ export default function AdminPanel() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <AIModelTab />
       </Tabs>
     </div>
+  );
+}
+
+function AIModelTab() {
+  const { toast } = useToast();
+  
+  interface ModelStatus {
+    modelId: string;
+    version: number;
+    isReady: boolean;
+    trainedAt: string | null;
+    samplesCount: number;
+    metrics: {
+      accuracy: number;
+      precision: number;
+      recall: number;
+      f1Score: number;
+    };
+  }
+
+  const { data: modelStatus, isLoading: modelLoading, refetch } = useQuery<ModelStatus>({
+    queryKey: ["/api/admin/model/status"],
+    refetchInterval: 10000,
+  });
+
+  const retrainMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/model/retrain");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Model Retrained",
+        description: `Version ${data.version} trained successfully`,
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        title: "Retrain Failed",
+        description: "Failed to retrain the model",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleExport = () => {
+    window.open("/api/admin/model/export", "_blank");
+  };
+
+  return (
+    <TabsContent value="ai-model" className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5" />
+              ML Model Status
+            </CardTitle>
+            <CardDescription>
+              Fraud detection machine learning model
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {modelLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+            ) : modelStatus ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Model ID</span>
+                  <span className="font-mono text-sm">{modelStatus.modelId}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Version</span>
+                  <Badge variant="outline">v{modelStatus.version}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Status</span>
+                  {modelStatus.isReady ? (
+                    <Badge className="bg-chart-2/20 text-chart-2 border-chart-2/30">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Ready
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-chart-4/20 text-chart-4 border-chart-4/30">
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Training
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Training Samples</span>
+                  <span className="font-medium">{modelStatus.samplesCount}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Last Trained</span>
+                  <span className="text-sm">
+                    {modelStatus.trainedAt 
+                      ? format(new Date(modelStatus.trainedAt), "MMM d, h:mm a")
+                      : "Never"
+                    }
+                  </span>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => retrainMutation.mutate()}
+                    disabled={retrainMutation.isPending}
+                    data-testid="button-retrain-model"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${retrainMutation.isPending ? 'animate-spin' : ''}`} />
+                    Retrain Model
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    data-testid="button-export-model"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground">Unable to load model status</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Model Performance
+            </CardTitle>
+            <CardDescription>
+              Current model accuracy metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {modelLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            ) : modelStatus?.metrics ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Accuracy</span>
+                    <span className="text-sm font-medium">{(modelStatus.metrics.accuracy * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-chart-2 rounded-full transition-all"
+                      style={{ width: `${modelStatus.metrics.accuracy * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Precision</span>
+                    <span className="text-sm font-medium">{(modelStatus.metrics.precision * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-chart-3 rounded-full transition-all"
+                      style={{ width: `${modelStatus.metrics.precision * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Recall</span>
+                    <span className="text-sm font-medium">{(modelStatus.metrics.recall * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-chart-4 rounded-full transition-all"
+                      style={{ width: `${modelStatus.metrics.recall * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">F1 Score</span>
+                    <span className="text-sm font-medium">{(modelStatus.metrics.f1Score * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-chart-1 rounded-full transition-all"
+                      style={{ width: `${modelStatus.metrics.f1Score * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No metrics available</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            Model Features
+          </CardTitle>
+          <CardDescription>
+            Features used for fraud prediction
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Keyboard className="w-4 h-4 text-chart-1" />
+                <span className="font-medium text-sm">Typing Dynamics</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Keystroke timing, typing speed, and pattern analysis
+              </p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Fingerprint className="w-4 h-4 text-chart-2" />
+                <span className="font-medium text-sm">Device Fingerprint</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Browser, screen, and hardware characteristics
+              </p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="w-4 h-4 text-chart-3" />
+                <span className="font-medium text-sm">Geo Analysis</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Location consistency and travel patterns
+              </p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4 text-chart-4" />
+                <span className="font-medium text-sm">Velocity Scoring</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Login frequency and attempt patterns
+              </p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-chart-5" />
+                <span className="font-medium text-sm">Time Analysis</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Login timing relative to user baseline
+              </p>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Bot className="w-4 h-4 text-primary" />
+                <span className="font-medium text-sm">Bot Detection</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Automated interaction pattern recognition
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </TabsContent>
   );
 }

@@ -140,10 +140,10 @@ export default function Dashboard() {
 
   // Redirect non-admins to login (dashboard is admin-only)
   useEffect(() => {
-    if (error) {
+    if (error || (!isLoading && !stats)) {
       setLocation("/login");
     }
-  }, [error, setLocation]);
+  }, [error, isLoading, stats, setLocation]);
 
   if (isLoading) {
     return (
@@ -162,7 +162,6 @@ export default function Dashboard() {
   }
 
   if (!stats || error) {
-    setLocation("/login");
     return null;
   }
 

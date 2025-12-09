@@ -16,6 +16,8 @@ import UserDetail from "@/pages/user-detail";
 import BehaviorAnalysis from "@/pages/behavior-analysis";
 import SecurityRules from "@/pages/security-rules";
 import Login from "@/pages/login";
+import RealLogin from "@/pages/real-login";
+import RealHome from "@/pages/real-home";
 import UserDashboard from "@/pages/user-dashboard";
 import AdminPanel from "@/pages/admin-panel";
 
@@ -23,6 +25,7 @@ function PublicRoutes() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/real-login" component={RealLogin} />
       <Route component={Login} />
     </Switch>
   );
@@ -39,6 +42,7 @@ function ProtectedRoutes() {
       <Route path="/analysis" component={BehaviorAnalysis} />
       <Route path="/rules" component={SecurityRules} />
       <Route path="/user-dashboard" component={UserDashboard} />
+      <Route path="/real-home" component={RealHome} />
       <Route path="/admin" component={AdminPanel} />
       <Route component={NotFound} />
     </Switch>
@@ -48,7 +52,7 @@ function ProtectedRoutes() {
 function AppContent() {
   const [location] = useLocation();
   
-  const isPublicRoute = location === "/login" || location === "/side-login";
+  const isPublicRoute = location === "/login" || location === "/real-login";
   
   if (isPublicRoute) {
     return <PublicRoutes />;

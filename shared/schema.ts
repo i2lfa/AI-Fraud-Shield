@@ -21,6 +21,7 @@ export const enhancedRiskFactorsSchema = z.object({
   browserPatternScore: z.number().min(0).max(15),
   botLikelihoodScore: z.number().min(0).max(20),
   behavioralScore: z.number().min(0).max(15),
+  aiModelAnomalyScore: z.number().min(0).max(100).optional(),
 });
 
 export type EnhancedRiskFactors = z.infer<typeof enhancedRiskFactorsSchema>;

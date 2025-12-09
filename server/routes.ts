@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import type { Server } from "http";
 import { randomUUID } from "crypto";
 import { storage } from "./storage";
+import { fraudModel, extractTrainingFeatures } from "./ml-model";
 import { 
   getRiskLevel, 
   getDecision,
@@ -406,6 +407,189 @@ export async function registerRoutes(
       email: user.email,
       role: user.role,
     });
+  });
+
+  // Real production login - silent fraud detection, no risk data exposed
+  app.post("/api/auth/real-login", async (req, res) => {
+    try {
+      const { email, password, fingerprint, typingMetrics } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+      }
+
+      // Find user by email (using username field for simplicity)
+      const user = await storage.getAuthUser(email.split('@')[0]) || await storage.getAuthUser(email);
+      
+      const clientIp = req.ip || req.socket.remoteAddress || "0.0.0.0";
+      const userAgent = req.headers["user-agent"] || "Unknown";
+      const device = userAgent.includes("Chrome") ? "Chrome" : 
+                     userAgent.includes("Firefox") ? "Firefox" : 
+                     userAgent.includes("Safari") ? "Safari" : "Unknown";
+      const deviceType = userAgent.includes("Mobile") ? "mobile" : "desktop";
+      const geo = "US East";
+      const region = "us-east";
+
+      const baseline = user ? {
+        primaryDevice: user.primaryDevice,
+        primaryRegion: user.primaryRegion,
+        avgTypingSpeed: user.avgTypingSpeed,
+        typicalLoginWindow: user.typicalLoginWindow,
+      } : undefined;
+
+      const breakdown = calculateRiskBreakdown(
+        { 
+          device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+          deviceType,
+          geo,
+          region,
+          typingSpeed: typingMetrics?.typingSpeed || 45,
+          loginAttempts: 1,
+          loginTime: new Date().getHours(),
+        },
+        baseline
+      );
+
+      const enhancedFactors = calculateEnhancedRiskFactors(
+        clientIp,
+        user?.lastLoginIp,
+        user?.lastLoginTime,
+        user?.lastLoginGeo,
+        geo,
+        typingMetrics,
+        fingerprint
+      );
+
+      // Get AI model prediction
+      const trainingFeatures = extractTrainingFeatures(
+        typingMetrics || { typingSpeed: 45 },
+        fingerprint,
+        null,
+        geo,
+        user?.lastLoginGeo || null,
+        1,
+        user?.password === password
+      );
+      
+      const aiPrediction = fraudModel.predict(trainingFeatures);
+
+      // Calculate combined risk score including AI model
+      const baseScore = breakdown.deviceDrift + breakdown.geoDrift + breakdown.typingDrift + 
+                       breakdown.timingAnomaly + breakdown.attemptsMultiplier;
+      const enhancedScore = enhancedFactors.ipReputation + enhancedFactors.impossibleTravel + 
+                           enhancedFactors.velocityScore + enhancedFactors.browserPatternScore + 
+                           enhancedFactors.botLikelihoodScore + enhancedFactors.behavioralScore;
+      const aiScore = aiPrediction.score * 0.3; // Weight AI score at 30%
+      const riskScore = Math.min(100, baseScore + Math.floor(enhancedScore / 2) + Math.floor(aiScore));
+      
+      const rules = await storage.getRules();
+      const riskLevel = getRiskLevel(riskScore);
+      const decision = getDecision(riskScore, rules);
+      const hiddenReason = getHiddenReason(breakdown, enhancedFactors);
+
+      // Log the attempt with AI model score
+      const loginAttempt: LoginAttempt = {
+        id: randomUUID(),
+        timestamp: new Date().toISOString(),
+        userId: user?.id,
+        username: email,
+        ip: clientIp,
+        device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+        deviceType,
+        geo,
+        region,
+        fingerprint,
+        riskScore,
+        riskLevel,
+        decision,
+        breakdown,
+        enhancedFactors: {
+          ...enhancedFactors,
+          aiModelAnomalyScore: aiPrediction.score,
+        },
+        reason: generateExplanation(breakdown, riskScore, decision),
+        success: false,
+        requiresOtp: false,
+        loginSource: "real-login",
+        hiddenReason: `${hiddenReason} | AI Score: ${aiPrediction.score}`,
+      };
+
+      // Train the model with this sample
+      fraudModel.addSample(trainingFeatures, decision === "block" || decision === "challenge");
+
+      // Silent failure for invalid credentials
+      if (!user || user.password !== password) {
+        loginAttempt.success = false;
+        await storage.addLoginAttempt(loginAttempt);
+        return res.status(401).json({ error: "Invalid login" });
+      }
+
+      // Silent failure for blocked/challenged attempts
+      if (decision === "block" || decision === "challenge") {
+        loginAttempt.success = false;
+        await storage.addLoginAttempt(loginAttempt);
+        return res.status(401).json({ error: "Invalid login" });
+      }
+
+      // Success - allow or alert
+      loginAttempt.success = true;
+      await storage.addLoginAttempt(loginAttempt);
+      
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      req.session.role = user.role;
+      req.session.pendingLogin = false;
+
+      // Return only success - NO risk data
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Real login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // AI Model endpoints (admin only)
+  app.get("/api/admin/model/status", async (req, res) => {
+    if (!req.session.userId || req.session.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    const state = fraudModel.getModelState();
+    res.json({
+      modelId: state.id,
+      version: state.version,
+      isReady: state.isReady,
+      trainedAt: state.trainedAt,
+      samplesCount: state.samplesCount,
+      metrics: state.metrics,
+    });
+  });
+
+  app.post("/api/admin/model/retrain", async (req, res) => {
+    if (!req.session.userId || req.session.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    fraudModel.forceRetrain();
+    const state = fraudModel.getModelState();
+    res.json({
+      success: true,
+      message: "Model retrained successfully",
+      modelId: state.id,
+      version: state.version,
+      metrics: state.metrics,
+    });
+  });
+
+  app.get("/api/admin/model/export", async (req, res) => {
+    if (!req.session.userId || req.session.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    const modelData = fraudModel.exportModel();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=fraud-model.json');
+    res.send(modelData);
   });
 
   app.get("/api/admin/login-attempts", async (req, res) => {

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,8 +60,13 @@ export default function UserDashboard() {
     },
   });
 
+  useEffect(() => {
+    if (error) {
+      setLocation("/login");
+    }
+  }, [error, setLocation]);
+
   if (error) {
-    setLocation("/login");
     return null;
   }
 
