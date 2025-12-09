@@ -726,5 +726,45 @@
     "hiddenReason": "HIDDEN: Device fingerprint does not match user baseline profile | AI: 21.0 | PageLoad: 231806ms",
     "loggedAt": "2025-12-09T22:52:54.865Z",
     "source": "real-login-external"
+  },
+  {
+    "id": "1e26161e-685c-46e0-9da7-f0662c6d24ed",
+    "timestamp": "2025-12-09T23:01:34.271Z",
+    "userId": "usr_000",
+    "username": "john",
+    "ip": "127.0.xxx.xxx",
+    "device": "Desktop - Unknown",
+    "deviceType": "desktop",
+    "geo": "US East",
+    "region": "us-east",
+    "fingerprint": {
+      "timezone": "America/New_York"
+    },
+    "riskScore": 46,
+    "riskLevel": "medium",
+    "decision": "alert",
+    "breakdown": {
+      "deviceDrift": 25,
+      "geoDrift": 0,
+      "typingDrift": 0,
+      "timingAnomaly": 10,
+      "attemptsMultiplier": 0
+    },
+    "enhancedFactors": {
+      "ipReputation": 8,
+      "impossibleTravel": 0,
+      "velocityScore": 0,
+      "browserPatternScore": 10,
+      "botLikelihoodScore": 0,
+      "behavioralScore": 0,
+      "aiModelAnomalyScore": 7
+    },
+    "reason": "Risk score of 46 triggered due to login from an unrecognized device and login occurred outside typical hours. Session was alerted.",
+    "success": true,
+    "requiresOtp": false,
+    "loginSource": "real-login",
+    "hiddenReason": "HIDDEN: Browser fingerprint inconsistencies detected - possible spoofing | AI: 7.0 | PageLoad: 1200ms",
+    "loggedAt": "2025-12-09T23:01:34.272Z",
+    "source": "real-login-external"
   }
 ]
