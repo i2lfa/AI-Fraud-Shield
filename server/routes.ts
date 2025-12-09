@@ -567,9 +567,15 @@ export async function registerRoutes(
                      userAgent.includes("Firefox") ? "Firefox" : 
                      userAgent.includes("Safari") ? "Safari" : "Unknown";
       const deviceType = userAgent.includes("Mobile") ? "mobile" : "desktop";
-      const geo = fingerprint?.timezone?.includes("Asia") ? "Asia" :
-                  fingerprint?.timezone?.includes("Europe") ? "EU" :
-                  fingerprint?.timezone?.includes("America") ? "US East" : "Unknown";
+      
+      // Improved geo detection - default to user's baseline if available for simulation
+      const tzLower = (fingerprint?.timezone || "").toLowerCase();
+      let geo = "US East"; // Default for simulation
+      if (tzLower.includes("asia")) geo = "Asia";
+      else if (tzLower.includes("europe") || tzLower.includes("london") || tzLower.includes("paris") || tzLower.includes("berlin")) geo = "EU";
+      else if (tzLower.includes("america") || tzLower.includes("us/") || tzLower.includes("new_york") || tzLower.includes("los_angeles") || tzLower.includes("chicago")) geo = "US East";
+      else if (user?.primaryRegion) geo = user.primaryRegion.includes("us") ? "US East" : user.primaryRegion;
+      
       const region = geo.toLowerCase().replace(" ", "-");
 
       const baseline = user ? {
@@ -632,6 +638,12 @@ export async function registerRoutes(
       // Check credentials
       const credentialsValid = user && user.password === password;
 
+      console.log(`[Simulation] User: ${username}, Valid: ${credentialsValid}, Risk: ${riskScore}, Decision: ${decision}, Geo: ${geo}`);
+
+      // For simulation mode: success is based on credentials only
+      // Risk data is still logged for ML training purposes
+      const simulationSuccess = credentialsValid;
+
       // Log the simulation attempt with full metadata for ML training
       const simulationAttempt: LoginAttempt = {
         id: randomUUID(),
@@ -653,7 +665,7 @@ export async function registerRoutes(
           aiModelAnomalyScore: aiPrediction.score,
         },
         reason: generateExplanation(breakdown, riskScore, decision),
-        success: credentialsValid && (decision === "allow" || decision === "alert"),
+        success: simulationSuccess,
         requiresOtp: false,
         loginSource: "simulation",
         hiddenReason: `${hiddenReason} | AI Score: ${aiPrediction.score} | Simulation Mode`,
@@ -664,12 +676,9 @@ export async function registerRoutes(
       // Train the model with this sample
       fraudModel.addSample(trainingFeatures, decision === "block" || decision === "challenge");
 
-      // Return ONLY success/failure - no risk data exposed
-      if (credentialsValid && (decision === "allow" || decision === "alert")) {
-        return res.json({ success: true });
-      } else {
-        return res.json({ success: false });
-      }
+      // Return success/failure based on credentials only
+      // Risk data is logged but doesn't block simulation
+      return res.json({ success: simulationSuccess });
     } catch (error) {
       console.error("Simulation error:", error);
       res.status(500).json({ error: "Simulation failed", success: false });

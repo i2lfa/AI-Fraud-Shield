@@ -37,6 +37,18 @@ export interface IStorage {
 const generateAuthUsers = (): AuthUser[] => {
   const users: AuthUser[] = [
     {
+      id: "usr_000",
+      username: "john",
+      email: "john@company.com",
+      password: "password123",
+      role: "user",
+      primaryDevice: "Windows - Chrome",
+      primaryRegion: "US East",
+      avgTypingSpeed: 45,
+      typicalLoginWindow: { start: 8, end: 18 },
+      createdAt: "2024-01-10T00:00:00Z",
+    },
+    {
       id: "usr_001",
       username: "john.smith",
       email: "john.smith@company.com",
