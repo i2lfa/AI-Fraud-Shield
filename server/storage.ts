@@ -6,7 +6,11 @@ import type {
   RiskBreakdown,
   DashboardStats,
   RiskLevel,
-  Decision
+  Decision,
+  AuthUser,
+  LoginAttempt,
+  OtpSession,
+  EnhancedRiskFactors,
 } from "@shared/schema";
 import { getRiskLevel, getDecision } from "@shared/schema";
 
@@ -19,100 +23,96 @@ export interface IStorage {
   getRules(): Promise<SecurityRules>;
   updateRules(rules: SecurityRules): Promise<SecurityRules>;
   getDashboardStats(): Promise<DashboardStats>;
+  getAuthUser(username: string): Promise<AuthUser | undefined>;
+  getAuthUserById(id: string): Promise<AuthUser | undefined>;
+  getAllAuthUsers(): Promise<AuthUser[]>;
+  createOtpSession(userId: string): Promise<OtpSession>;
+  getOtpSession(sessionId: string): Promise<OtpSession | undefined>;
+  verifyOtp(sessionId: string, code: string): Promise<boolean>;
+  addLoginAttempt(attempt: LoginAttempt): Promise<LoginAttempt>;
+  getLoginAttempts(): Promise<LoginAttempt[]>;
+  getLoginAttemptsByUser(userId: string): Promise<LoginAttempt[]>;
 }
 
-const generateSampleUsers = (): UserBaseline[] => {
-  const users: UserBaseline[] = [
+const generateAuthUsers = (): AuthUser[] => {
+  const users: AuthUser[] = [
     {
       id: "usr_001",
       username: "john.smith",
       email: "john.smith@company.com",
+      password: "password123",
+      role: "user",
       primaryDevice: "Windows - Chrome",
       primaryRegion: "US East",
       avgTypingSpeed: 45,
       typicalLoginWindow: { start: 8, end: 18 },
-      riskHistory: generateRiskHistory(14, 15, 35),
       createdAt: "2024-01-15T00:00:00Z",
     },
     {
       id: "usr_002",
       username: "sarah.jones",
       email: "sarah.jones@company.com",
+      password: "password123",
+      role: "user",
       primaryDevice: "macOS - Safari",
       primaryRegion: "US West",
       avgTypingSpeed: 52,
       typicalLoginWindow: { start: 9, end: 17 },
-      riskHistory: generateRiskHistory(14, 10, 25),
       createdAt: "2024-02-20T00:00:00Z",
     },
     {
       id: "usr_003",
-      username: "mike.wilson",
-      email: "mike.wilson@company.com",
-      primaryDevice: "Windows - Firefox",
-      primaryRegion: "EU West",
-      avgTypingSpeed: 38,
-      typicalLoginWindow: { start: 7, end: 16 },
-      riskHistory: generateRiskHistory(14, 20, 55),
-      createdAt: "2024-03-10T00:00:00Z",
+      username: "admin",
+      email: "admin@company.com",
+      password: "admin123",
+      role: "admin",
+      primaryDevice: "Windows - Chrome",
+      primaryRegion: "US East",
+      avgTypingSpeed: 55,
+      typicalLoginWindow: { start: 6, end: 22 },
+      createdAt: "2024-01-01T00:00:00Z",
     },
     {
       id: "usr_004",
       username: "emily.chen",
       email: "emily.chen@company.com",
+      password: "password123",
+      role: "user",
       primaryDevice: "macOS - Chrome",
       primaryRegion: "Asia East",
       avgTypingSpeed: 58,
       typicalLoginWindow: { start: 10, end: 19 },
-      riskHistory: generateRiskHistory(14, 8, 20),
       createdAt: "2024-04-05T00:00:00Z",
     },
     {
       id: "usr_005",
       username: "david.brown",
       email: "david.brown@company.com",
+      password: "password123",
+      role: "user",
       primaryDevice: "Linux - Firefox",
       primaryRegion: "EU Central",
       avgTypingSpeed: 42,
       typicalLoginWindow: { start: 6, end: 15 },
-      riskHistory: generateRiskHistory(14, 30, 70),
       createdAt: "2024-05-12T00:00:00Z",
-    },
-    {
-      id: "usr_006",
-      username: "lisa.anderson",
-      email: "lisa.anderson@company.com",
-      primaryDevice: "iPhone - Safari",
-      primaryRegion: "US East",
-      avgTypingSpeed: 35,
-      typicalLoginWindow: { start: 8, end: 20 },
-      riskHistory: generateRiskHistory(14, 12, 28),
-      createdAt: "2024-06-01T00:00:00Z",
-    },
-    {
-      id: "usr_007",
-      username: "alex.martinez",
-      email: "alex.martinez@company.com",
-      primaryDevice: "Android - Chrome",
-      primaryRegion: "South America",
-      avgTypingSpeed: 40,
-      typicalLoginWindow: { start: 9, end: 18 },
-      riskHistory: generateRiskHistory(14, 25, 60),
-      createdAt: "2024-06-15T00:00:00Z",
-    },
-    {
-      id: "usr_008",
-      username: "rachel.kim",
-      email: "rachel.kim@company.com",
-      primaryDevice: "Windows - Chrome",
-      primaryRegion: "Asia South",
-      avgTypingSpeed: 48,
-      typicalLoginWindow: { start: 10, end: 19 },
-      riskHistory: generateRiskHistory(14, 15, 40),
-      createdAt: "2024-07-20T00:00:00Z",
     },
   ];
   return users;
+};
+
+const generateSampleUsers = (): UserBaseline[] => {
+  const authUsers = generateAuthUsers();
+  return authUsers.filter(u => u.role === "user").map(u => ({
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    primaryDevice: u.primaryDevice,
+    primaryRegion: u.primaryRegion,
+    avgTypingSpeed: u.avgTypingSpeed,
+    typicalLoginWindow: u.typicalLoginWindow,
+    riskHistory: generateRiskHistory(14, 10, 40),
+    createdAt: u.createdAt,
+  }));
 };
 
 function generateRiskHistory(days: number, minScore: number, maxScore: number) {
@@ -121,7 +121,7 @@ function generateRiskHistory(days: number, minScore: number, maxScore: number) {
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
-    const score = Math.round(minScore + Math.random() * (maxScore - minScore));
+    const score = Math.round(minScore + ((i * 7) % (maxScore - minScore)));
     history.push({
       date: date.toISOString().split('T')[0],
       score,
@@ -167,10 +167,10 @@ const generateSampleLogs = (users: UserBaseline[]): EventLog[] => {
 
   const now = new Date();
   for (let i = 0; i < 100; i++) {
-    const user = users[Math.floor(Math.random() * users.length)];
-    const device = devices[Math.floor(Math.random() * devices.length)];
-    const region = regions[Math.floor(Math.random() * regions.length)];
-    const timestamp = new Date(now.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000);
+    const user = users[i % users.length];
+    const device = devices[i % devices.length];
+    const region = regions[i % regions.length];
+    const timestamp = new Date(now.getTime() - (i * 2 * 60 * 60 * 1000));
     
     const isNormalDevice = device.name === user.primaryDevice;
     const isNormalRegion = region.name === user.primaryRegion;
@@ -210,13 +210,13 @@ const generateSampleLogs = (users: UserBaseline[]): EventLog[] => {
       deviceType: device.type,
       geo: region.name,
       region: region.code,
-      ip: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+      ip: `${10 + (i % 245)}.${(i * 7) % 255}.${(i * 13) % 255}.${(i * 17) % 255}`,
       riskScore,
       riskLevel,
       decision,
       breakdown,
-      reason: reasons[Math.floor(Math.random() * reasons.length)],
-      latency: Math.floor(50 + Math.random() * 150),
+      reason: reasons[i % reasons.length],
+      latency: 50 + (i % 150),
     });
   }
 
@@ -235,14 +235,21 @@ const defaultRules: SecurityRules = {
 
 export class MemStorage implements IStorage {
   private users: Map<string, UserBaseline>;
+  private authUsers: Map<string, AuthUser>;
   private logs: EventLog[];
   private rules: SecurityRules;
+  private otpSessions: Map<string, OtpSession>;
+  private loginAttempts: LoginAttempt[];
 
   constructor() {
+    const authUsersList = generateAuthUsers();
+    this.authUsers = new Map(authUsersList.map(u => [u.username, u]));
     const sampleUsers = generateSampleUsers();
     this.users = new Map(sampleUsers.map(u => [u.id, u]));
     this.logs = generateSampleLogs(sampleUsers);
     this.rules = { ...defaultRules };
+    this.otpSessions = new Map();
+    this.loginAttempts = [];
   }
 
   async getUsers(): Promise<UserBaseline[]> {
@@ -275,13 +282,72 @@ export class MemStorage implements IStorage {
     return this.rules;
   }
 
+  async getAuthUser(username: string): Promise<AuthUser | undefined> {
+    return this.authUsers.get(username);
+  }
+
+  async getAuthUserById(id: string): Promise<AuthUser | undefined> {
+    return Array.from(this.authUsers.values()).find(u => u.id === id);
+  }
+
+  async getAllAuthUsers(): Promise<AuthUser[]> {
+    return Array.from(this.authUsers.values());
+  }
+
+  async createOtpSession(userId: string): Promise<OtpSession> {
+    const code = String(100000 + Math.floor(Math.random() * 900000));
+    const session: OtpSession = {
+      id: randomUUID(),
+      userId,
+      code,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      verified: false,
+      attempts: 0,
+    };
+    this.otpSessions.set(session.id, session);
+    console.log(`[OTP] Generated code ${code} for user ${userId} (session: ${session.id})`);
+    return session;
+  }
+
+  async getOtpSession(sessionId: string): Promise<OtpSession | undefined> {
+    return this.otpSessions.get(sessionId);
+  }
+
+  async verifyOtp(sessionId: string, code: string): Promise<boolean> {
+    const session = this.otpSessions.get(sessionId);
+    if (!session) return false;
+    
+    session.attempts++;
+    if (session.attempts > 3) return false;
+    if (new Date(session.expiresAt) < new Date()) return false;
+    
+    if (session.code === code) {
+      session.verified = true;
+      this.otpSessions.set(sessionId, session);
+      return true;
+    }
+    return false;
+  }
+
+  async addLoginAttempt(attempt: LoginAttempt): Promise<LoginAttempt> {
+    this.loginAttempts.unshift(attempt);
+    return attempt;
+  }
+
+  async getLoginAttempts(): Promise<LoginAttempt[]> {
+    return this.loginAttempts;
+  }
+
+  async getLoginAttemptsByUser(userId: string): Promise<LoginAttempt[]> {
+    return this.loginAttempts.filter(a => a.userId === userId);
+  }
+
   async getDashboardStats(): Promise<DashboardStats> {
     const logs = this.logs;
-    const users = Array.from(this.users.values());
 
     const totalEvents = logs.length;
     const highRiskCount = logs.filter(l => l.riskLevel === 'critical' || l.riskLevel === 'high').length;
-    const highRiskPercentage = (highRiskCount / totalEvents) * 100;
+    const highRiskPercentage = Math.round((highRiskCount / totalEvents) * 100);
     const blockedCount = logs.filter(l => l.decision === 'block').length;
     const avgResponseTime = Math.round(logs.reduce((sum, l) => sum + l.latency, 0) / logs.length);
 

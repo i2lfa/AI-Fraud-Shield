@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export type RiskLevel = "critical" | "high" | "medium" | "low" | "safe";
 export type Decision = "block" | "challenge" | "alert" | "allow";
+export type UserRole = "user" | "admin";
 
 export const riskBreakdownSchema = z.object({
   deviceDrift: z.number().min(0).max(30),
@@ -12,6 +13,101 @@ export const riskBreakdownSchema = z.object({
 });
 
 export type RiskBreakdown = z.infer<typeof riskBreakdownSchema>;
+
+export const enhancedRiskFactorsSchema = z.object({
+  ipReputation: z.number().min(0).max(20),
+  impossibleTravel: z.number().min(0).max(25),
+  velocityScore: z.number().min(0).max(15),
+  browserPatternScore: z.number().min(0).max(15),
+  botLikelihoodScore: z.number().min(0).max(20),
+  behavioralScore: z.number().min(0).max(15),
+});
+
+export type EnhancedRiskFactors = z.infer<typeof enhancedRiskFactorsSchema>;
+
+export const deviceFingerprintSchema = z.object({
+  userAgent: z.string(),
+  screenResolution: z.string(),
+  timezone: z.string(),
+  language: z.string(),
+  platform: z.string(),
+  cookiesEnabled: z.boolean(),
+  webglRenderer: z.string().optional(),
+  canvasHash: z.string().optional(),
+});
+
+export type DeviceFingerprint = z.infer<typeof deviceFingerprintSchema>;
+
+export const authUserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  email: z.string(),
+  password: z.string(),
+  role: z.enum(["user", "admin"]),
+  primaryDevice: z.string(),
+  primaryRegion: z.string(),
+  avgTypingSpeed: z.number(),
+  typicalLoginWindow: z.object({
+    start: z.number(),
+    end: z.number(),
+  }),
+  lastLoginIp: z.string().optional(),
+  lastLoginTime: z.string().optional(),
+  lastLoginGeo: z.string().optional(),
+  createdAt: z.string(),
+});
+
+export type AuthUser = z.infer<typeof authUserSchema>;
+
+export const loginRequestSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  fingerprint: deviceFingerprintSchema.optional(),
+  typingMetrics: z.object({
+    avgKeyDownTime: z.number(),
+    avgKeyUpTime: z.number(),
+    typingSpeed: z.number(),
+  }).optional(),
+  loginSource: z.enum(["main", "side"]).default("main"),
+});
+
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
+
+export const otpSessionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  code: z.string(),
+  expiresAt: z.string(),
+  verified: z.boolean(),
+  attempts: z.number(),
+});
+
+export type OtpSession = z.infer<typeof otpSessionSchema>;
+
+export const loginAttemptSchema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  userId: z.string().optional(),
+  username: z.string(),
+  ip: z.string(),
+  device: z.string(),
+  deviceType: z.string(),
+  geo: z.string(),
+  region: z.string(),
+  fingerprint: deviceFingerprintSchema.optional(),
+  riskScore: z.number(),
+  riskLevel: z.enum(["critical", "high", "medium", "low", "safe"]),
+  decision: z.enum(["block", "challenge", "alert", "allow"]),
+  breakdown: riskBreakdownSchema,
+  enhancedFactors: enhancedRiskFactorsSchema.optional(),
+  reason: z.string(),
+  success: z.boolean(),
+  requiresOtp: z.boolean(),
+  loginSource: z.enum(["main", "side"]),
+  hiddenReason: z.string(),
+});
+
+export type LoginAttempt = z.infer<typeof loginAttemptSchema>;
 
 export const userBaselineSchema = z.object({
   id: z.string(),

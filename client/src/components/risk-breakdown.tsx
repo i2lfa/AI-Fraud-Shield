@@ -92,6 +92,8 @@ interface RiskBreakdownInlineProps {
   breakdown: RiskBreakdown;
 }
 
+export { RiskBreakdownCard as RiskBreakdown };
+
 export function RiskBreakdownInline({ breakdown }: RiskBreakdownInlineProps) {
   const factors = [
     { name: "Device", value: breakdown.deviceDrift, color: "text-chart-1" },

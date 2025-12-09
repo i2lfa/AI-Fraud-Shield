@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -6,7 +7,10 @@ import {
   User,
   Settings,
   Shield,
-  Zap
+  Zap,
+  LogOut,
+  Lock,
+  Home,
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,6 +24,16 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  role: "user" | "admin";
+}
 
 const mainItems = [
   {
@@ -61,7 +75,23 @@ const configItems = [
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  const { data: user } = useQuery<AuthUser>({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/auth/logout");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      setLocation("/login");
+    },
+  });
 
   const isActive = (url: string) => {
     if (url === "/") return location === "/";
@@ -82,6 +112,34 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {user && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Account</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/user-dashboard")}>
+                    <Link href="/user-dashboard" data-testid="link-nav-my-dashboard">
+                      <Home className="h-4 w-4" />
+                      <span>My Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {user.role === "admin" && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/admin")}>
+                      <Link href="/admin" data-testid="link-nav-admin-panel">
+                        <Lock className="h-4 w-4" />
+                        <span>Admin Panel</span>
+                        <Badge variant="destructive" className="ml-auto text-xs">Secret</Badge>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         <SidebarGroup>
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -134,7 +192,39 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-3">
+        {user ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 rounded-md bg-sidebar-accent p-3">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{user.username}</p>
+                <p className="text-xs text-muted-foreground">{user.role}</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              data-testid="button-sidebar-logout"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        ) : (
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="w-full"
+            onClick={() => setLocation("/login")}
+            data-testid="button-sidebar-login"
+          >
+            Sign In
+          </Button>
+        )}
         <div className="flex items-center gap-2 rounded-md bg-sidebar-accent p-3">
           <div className="h-2 w-2 rounded-full bg-risk-low animate-pulse" />
           <span className="text-xs text-muted-foreground">System Active</span>

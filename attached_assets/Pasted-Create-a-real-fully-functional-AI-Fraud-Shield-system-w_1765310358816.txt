@@ -1,0 +1,136 @@
+Create a real, fully functional AI Fraud Shield system with:
+
+Normal Login Page (main)
+
+Side Login Page (secondary login page with different style)
+
+Real-time fraud scoring
+
+OTP verification
+
+Admin panel
+
+User panel
+
+Hidden fraud-decision logic
+
+ADDITIONAL NEW FEATURES TO IMPLEMENT
+
+Add all the following new features into the system:
+
+Secondary Login Page
+
+Different URL (e.g., /side-login)
+
+Different design/theme
+
+Same backend logic as the main login
+
+The user can log in from either one
+
+Both must fully work and be shown in your final simulation
+
+Fraud Rules That Are Hidden Internally
+
+All decision-making (accept / reject / suspicious)
+
+Must NOT be visible to the user anywhere
+
+Must not be exposed in the UI or logs
+
+Only shown to admin in a secure hidden admin tab
+
+Explain the hidden logic structure, but do NOT show it to the user-facing components
+
+Admin Secret Dashboard Panel
+
+Hidden unless logged in as admin
+
+Shows:
+
+Hidden fraud scoring logs
+
+All login attempts
+
+Device fingerprints
+
+Risk heatmap
+
+Severity badges
+
+Only the admin sees this panel
+
+Improved Fraud AI Engine
+Add:
+
+Behavioral analysis
+
+IP reputation check
+
+Impossible travel detection
+
+Velocity check
+
+Suspicious browser pattern detection
+
+Bot-like click timing score
+Make it modular & extensible.
+
+Full System Explanation
+
+Architecture
+
+Model flow
+
+Backend routing
+
+Frontend structure
+
+FULLY RUNNABLE + DEMONSTRATED
+At the end, show everything running from your side as if it’s a real website:
+
+Main Login Page
+
+Side Login Page
+
+OTP Page
+
+Dashboard
+
+Admin Panel
+
+Fraud analysis results (admin only)
+
+Example login attempts
+
+Example risk alerts
+
+IMPORTANT REQUIREMENT
+
+❗ All fraud decision logic that determines Accept / Reject / Suspicious must stay completely hidden from users.
+Do NOT show the rules or scores in the user interface.
+Only admin should see them in the secret admin view.
+
+FINAL OUTPUT MUST INCLUDE
+
+Rebuilt full project
+
+Clean folder structure
+
+Complete code
+
+Working simulation of every interface
+
+Working endpoints
+
+Fully running system demo from your side
+
+Admin + user flows
+
+OTP flow
+
+Hidden rules
+
+Side login page with different design
+
+Everything styled and polished
