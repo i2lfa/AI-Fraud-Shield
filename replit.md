@@ -93,7 +93,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Test Accounts
 - **Admin**: username: `admin`, password: `admin123`, email: `abdulmalikfaa@gmail.com`, role: `admin`
-- **User**: username: `john`, password: `password123`, email: `alphap99@gmail.com`, role: `user`
+- **User**: username: `john`, password: `password123`, email: `alphapp9@gmail.com`, role: `user`
 
 ### OTP System
 - OTP codes printed to server console: `[OTP] Generated code XXXXXX`

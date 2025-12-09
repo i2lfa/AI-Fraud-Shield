@@ -39,7 +39,7 @@ const generateAuthUsers = (): AuthUser[] => {
     {
       id: "usr_000",
       username: "john",
-      email: "alphap99@gmail.com",
+      email: "alphapp9@gmail.com",
       password: "password123",
       role: "user",
       primaryDevice: "Windows - Chrome",
