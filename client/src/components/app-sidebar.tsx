@@ -59,7 +59,7 @@ const mainItems = [
     icon: Brain,
   },
   {
-    title: "Company Portal Demo",
+    title: "Company Portal",
     url: "/real-login",
     icon: Building2,
   },
