@@ -250,12 +250,17 @@ export default function SideLogin() {
               </>
             ) : (
               <div className="space-y-4">
-                <div className="p-4 bg-chart-2/10 border border-chart-2/20 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <KeyRound className="w-5 h-5 text-chart-2" />
+                <div className="p-4 bg-chart-4/20 border border-chart-4/30 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <KeyRound className="w-5 h-5 text-chart-4 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-sm">OTP Required</p>
-                      <p className="text-xs text-muted-foreground">Check server console for code</p>
+                      <p className="font-medium text-sm text-chart-4">OTP Required</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        For demo: Check the <strong>"Start application"</strong> workflow output to find your code.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Look for: <code className="bg-muted px-1 rounded text-xs">[OTP] Generated code XXXXXX</code>
+                      </p>
                     </div>
                   </div>
                 </div>
