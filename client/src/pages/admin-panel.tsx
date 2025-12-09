@@ -71,6 +71,7 @@ export default function AdminPanel() {
   const { data: loginAttempts, isLoading: attemptsLoading } = useQuery<LoginAttempt[]>({
     queryKey: ["/api/admin/login-attempts"],
     enabled: user?.role === "admin",
+    refetchInterval: 3000, // Real-time updates every 3 seconds
   });
 
   const { data: fraudRules } = useQuery({
@@ -81,6 +82,7 @@ export default function AdminPanel() {
   const { data: dashboardStats } = useQuery({
     queryKey: ["/api/dashboard"],
     enabled: user?.role === "admin",
+    refetchInterval: 3000, // Real-time updates every 3 seconds
   });
 
   const logoutMutation = useMutation({

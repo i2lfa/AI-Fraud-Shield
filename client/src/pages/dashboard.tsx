@@ -130,6 +130,7 @@ function DeviceIcon({ type }: { type: string }) {
 export default function Dashboard() {
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard"],
+    refetchInterval: 3000, // Real-time updates every 3 seconds
   });
 
   if (isLoading) {
