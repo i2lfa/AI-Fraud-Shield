@@ -52,10 +52,18 @@ const mainItems = [
     url: "/simulator",
     icon: Zap,
   },
+];
+
+const adminOnlyItems = [
   {
     title: "AI Model Playground",
     url: "/model-playground",
     icon: Brain,
+  },
+  {
+    title: "Security Rules",
+    url: "/rules",
+    icon: Settings,
   },
 ];
 
@@ -72,13 +80,6 @@ const analysisItems = [
   },
 ];
 
-const configItems = [
-  {
-    title: "Security Rules",
-    url: "/rules",
-    icon: Settings,
-  },
-];
 
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
@@ -180,23 +181,25 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {configItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(' ', '-')}`}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {user?.role === "admin" && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin Only</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminOnlyItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(' ', '-')}`}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="p-4 space-y-3">
         {user ? (
