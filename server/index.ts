@@ -3,9 +3,32 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 
 const app = express();
 const httpServer = createServer(app);
+
+// WebSocket server for real-time monitoring
+export const wss = new WebSocketServer({ server: httpServer, path: "/ws/monitoring" });
+
+// Broadcast to all connected clients
+export function broadcastToMonitors(event: string, data: any) {
+  const message = JSON.stringify({ event, data, timestamp: new Date().toISOString() });
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+wss.on("connection", (ws) => {
+  console.log("[WebSocket] Monitor client connected");
+  ws.send(JSON.stringify({ event: "connected", message: "Connected to real-time monitoring" }));
+  
+  ws.on("close", () => {
+    console.log("[WebSocket] Monitor client disconnected");
+  });
+});
 
 declare module "http" {
   interface IncomingMessage {
