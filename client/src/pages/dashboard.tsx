@@ -129,11 +129,11 @@ function GeoMap({ data }: { data: { region: string; count: number; lat: number; 
         </g>
       </svg>
       
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 p-4">
         {data.map((point, idx) => {
-          const size = Math.max(16, (point.count / maxCount) * 36);
-          const x = ((point.lng + 180) / 360) * 100;
-          const y = ((90 - point.lat) / 180) * 100;
+          const size = Math.max(14, (point.count / maxCount) * 28);
+          const x = 5 + ((point.lng + 180) / 360) * 90;
+          const y = 10 + ((90 - point.lat) / 180) * 80;
           const intensity = point.count / maxCount;
           const label = regionLabels[point.region] || point.region;
           
@@ -149,13 +149,13 @@ function GeoMap({ data }: { data: { region: string; count: number; lat: number; 
               data-testid={`geo-point-${point.region}`}
             >
               <div 
-                className="absolute rounded-full bg-primary/20 animate-ping"
+                className="absolute rounded-full bg-primary/30"
                 style={{
-                  width: size * 1.5,
-                  height: size * 1.5,
-                  left: `${-size * 0.25}px`,
-                  top: `${-size * 0.25}px`,
-                  animationDuration: "2s",
+                  width: size * 1.8,
+                  height: size * 1.8,
+                  left: `${-size * 0.4}px`,
+                  top: `${-size * 0.4}px`,
+                  opacity: 0.4,
                 }}
               />
               <div
