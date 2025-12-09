@@ -963,12 +963,47 @@ export async function registerRoutes(
 
   app.get("/api/dashboard", async (req, res) => {
     try {
-      // Only admins can access dashboard with fraud statistics
-      if (req.session.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+      // Check if user is logged in
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
       }
+      
       const stats = await storage.getDashboardStats();
-      res.json(stats);
+      
+      // Admin sees all data, regular user sees only their own data
+      if (req.session.role === "admin") {
+        res.json(stats);
+      } else {
+        // Filter for user's own data only
+        const userId = req.session.userId;
+        const userLogs = stats.recentEvents.filter((log: any) => log.userId === userId);
+        const userRiskyEntry = stats.topRiskyUsers.find((u: any) => u.id === userId);
+        
+        // Calculate user-specific stats
+        const userHighRisk = userLogs.filter((l: any) => l.riskLevel === "high" || l.riskLevel === "critical").length;
+        const userMedium = userLogs.filter((l: any) => l.riskLevel === "medium").length;
+        const userLow = userLogs.filter((l: any) => l.riskLevel === "low").length;
+        const userSafe = userLogs.filter((l: any) => l.riskLevel === "safe").length;
+        
+        res.json({
+          totalEvents: userLogs.length,
+          highRiskPercentage: userLogs.length > 0 ? Math.round((userHighRisk / userLogs.length) * 100) : 0,
+          blockedCount: userLogs.filter((l: any) => l.decision === "block").length,
+          avgResponseTime: stats.avgResponseTime,
+          riskDistribution: {
+            critical: userLogs.filter((l: any) => l.riskLevel === "critical").length,
+            high: userHighRisk,
+            medium: userMedium,
+            low: userLow,
+            safe: userSafe,
+          },
+          deviceStats: stats.deviceStats,
+          geoStats: stats.geoStats,
+          topRiskyUsers: userRiskyEntry ? [userRiskyEntry] : [],
+          recentEvents: userLogs.slice(0, 20),
+          hourlyTrend: stats.hourlyTrend,
+        });
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch dashboard stats" });
     }
@@ -976,12 +1011,21 @@ export async function registerRoutes(
 
   app.get("/api/logs", async (req, res) => {
     try {
-      // Only admins can access full logs with fraud data
-      if (req.session.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+      // Check if user is logged in
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
       }
+      
       const logs = await storage.getLogs();
-      res.json(logs);
+      
+      // Admin sees all logs, regular user sees only their own logs
+      if (req.session.role === "admin") {
+        res.json(logs);
+      } else {
+        const userId = req.session.userId;
+        const userLogs = logs.filter((log: any) => log.userId === userId);
+        res.json(userLogs);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch logs" });
     }
