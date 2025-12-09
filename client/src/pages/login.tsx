@@ -78,7 +78,7 @@ export default function Login() {
         setOtpSessionId(data.otpSessionId);
         toast({
           title: "Verification Required",
-          description: "Please check the console for your OTP code (simulated SMS).",
+          description: "A verification code has been sent to your email.",
         });
       } else if (data.success) {
         toast({
@@ -214,10 +214,10 @@ export default function Login() {
                   <div className="text-sm">
                     <p className="font-medium text-chart-4">Additional Verification Required</p>
                     <p className="text-muted-foreground mt-1">
-                      For demo: Check the <strong>"Start application"</strong> workflow output in the Replit panel to find your 6-digit OTP code.
+                      We've sent a 6-digit verification code to your registered email address.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Look for: <code className="bg-muted px-1 rounded">[OTP] Generated code XXXXXX</code>
+                      Please check your inbox and enter the code below.
                     </p>
                   </div>
                 </div>
