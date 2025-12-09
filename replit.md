@@ -92,12 +92,13 @@ Preferred communication style: Simple, everyday language.
 - `/real-login` - Production login with silent ML-based fraud detection (no risk data exposed)
 
 ### Test Accounts
-- **Admin**: username: `admin`, password: `admin123`, role: `admin`
-- **User**: username: `john`, password: `password123`, role: `user`
+- **Admin**: username: `admin`, password: `admin123`, email: `abdulmalikfaa@gmail.com`, role: `admin`
+- **User**: username: `john`, password: `password123`, email: `alphap99@gmail.com`, role: `user`
 
 ### OTP System
 - OTP codes printed to server console: `[OTP] Generated code XXXXXX`
 - Required when risk score triggers "challenge" decision
+- **Future Enhancement**: To send OTPs via email, set up Resend or SendGrid integration. User emails are configured and ready.
 
 ## API Endpoints
 
