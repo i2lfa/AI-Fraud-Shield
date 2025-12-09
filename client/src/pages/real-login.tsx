@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Shield, Lock, User, Eye, EyeOff, Loader2, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface TypingMetrics {
@@ -17,13 +15,13 @@ interface TypingMetrics {
   totalTypingTime: number;
 }
 
+type SimulationState = "form" | "processing" | "success" | "failure";
+
 export default function RealLogin() {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [simulationState, setSimulationState] = useState<SimulationState>("form");
   
   const keyTimesRef = useRef<number[]>([]);
   const keyIntervalsRef = useRef<number[]>([]);
@@ -48,7 +46,7 @@ export default function RealLogin() {
     const times = keyTimesRef.current;
     const intervals = keyIntervalsRef.current;
     const totalTime = (Date.now() - startTimeRef.current) / 1000;
-    const charCount = email.length + password.length;
+    const charCount = username.length + password.length;
     
     if (intervals.length < 2) {
       return { 
@@ -89,39 +87,96 @@ export default function RealLogin() {
     webglRenderer: getWebGLInfo().renderer,
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string; typingMetrics: TypingMetrics; fingerprint: any }) => {
-      const response = await apiRequest("POST", "/api/auth/real-login", data);
+  const simulateMutation = useMutation({
+    mutationFn: async (data: { username: string; password: string; typingMetrics: TypingMetrics; fingerprint: any }) => {
+      const response = await apiRequest("POST", "/api/simulate-login", data);
       return response.json();
     },
     onSuccess: (data) => {
-      setIsProcessing(false);
       if (data.success) {
-        setLocation("/real-home");
+        setSimulationState("success");
+      } else {
+        setSimulationState("failure");
       }
     },
     onError: () => {
-      setIsProcessing(false);
-      toast({
-        title: "Login Failed",
-        description: "Invalid email or password.",
-        variant: "destructive",
-      });
+      setSimulationState("failure");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
+    setSimulationState("processing");
     
-    loginMutation.mutate({
-      email,
+    simulateMutation.mutate({
+      username,
       password,
       typingMetrics: getTypingMetrics(),
       fingerprint: getDeviceFingerprint(),
     });
   };
 
+  const handleReset = () => {
+    setUsername("");
+    setPassword("");
+    setSimulationState("form");
+    keyTimesRef.current = [];
+    keyIntervalsRef.current = [];
+    startTimeRef.current = Date.now();
+    lastKeyTimeRef.current = 0;
+  };
+
+  // Success Screen
+  if (simulationState === "success") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm text-center">
+          <CardContent className="pt-8 pb-8 space-y-6">
+            <div className="mx-auto w-20 h-20 bg-chart-2/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-chart-2" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-chart-2">Login Successful</h2>
+              <p className="text-muted-foreground text-sm">
+                Your login attempt was verified successfully.
+              </p>
+            </div>
+            <Button onClick={handleReset} variant="outline" className="w-full" data-testid="button-try-again">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Try Another Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Failure Screen
+  if (simulationState === "failure") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm text-center">
+          <CardContent className="pt-8 pb-8 space-y-6">
+            <div className="mx-auto w-20 h-20 bg-destructive/20 rounded-full flex items-center justify-center">
+              <XCircle className="w-10 h-10 text-destructive" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-destructive">Login Failed</h2>
+              <p className="text-muted-foreground text-sm">
+                Your login attempt could not be verified.
+              </p>
+            </div>
+            <Button onClick={handleReset} variant="outline" className="w-full" data-testid="button-try-again">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Login Form
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
@@ -129,25 +184,28 @@ export default function RealLogin() {
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
             <Shield className="w-6 h-6 text-primary" />
           </div>
-          <CardTitle className="text-xl">Sign In</CardTitle>
+          <CardTitle className="text-xl">AI Fraud Shield</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Secure login with real-time fraud detection
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  id="email"
-                  data-testid="input-real-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  data-testid="input-sim-username"
+                  type="text"
+                  placeholder="Enter username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className="pl-10"
                   required
-                  disabled={isProcessing}
+                  disabled={simulationState === "processing"}
                 />
               </div>
             </div>
@@ -158,7 +216,7 @@ export default function RealLogin() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  data-testid="input-real-password"
+                  data-testid="input-sim-password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
                   value={password}
@@ -166,13 +224,13 @@ export default function RealLogin() {
                   onKeyDown={handleKeyDown}
                   className="pl-10 pr-12"
                   required
-                  disabled={isProcessing}
+                  disabled={simulationState === "processing"}
                 />
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isProcessing}
+                  disabled={simulationState === "processing"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -182,19 +240,23 @@ export default function RealLogin() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isProcessing || !email || !password}
-              data-testid="button-real-login"
+              disabled={simulationState === "processing" || !username || !password}
+              data-testid="button-simulate-login"
             >
-              {isProcessing ? (
+              {simulationState === "processing" ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
+                  Verifying...
                 </>
               ) : (
                 "Sign In"
               )}
             </Button>
           </form>
+          
+          <p className="mt-4 text-xs text-center text-muted-foreground">
+            This is a login simulation for testing purposes only.
+          </p>
         </CardContent>
       </Card>
     </div>

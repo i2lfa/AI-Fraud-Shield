@@ -548,6 +548,134 @@ export async function registerRoutes(
     }
   });
 
+  // Login Simulation endpoint - evaluates risk but does NOT create sessions
+  // This is for testing/training purposes only
+  app.post("/api/simulate-login", async (req, res) => {
+    try {
+      const { username, password, fingerprint, typingMetrics } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password required", success: false });
+      }
+
+      // Find user
+      const user = await storage.getAuthUser(username);
+      
+      const clientIp = req.ip || req.socket.remoteAddress || "0.0.0.0";
+      const userAgent = req.headers["user-agent"] || "Unknown";
+      const device = userAgent.includes("Chrome") ? "Chrome" : 
+                     userAgent.includes("Firefox") ? "Firefox" : 
+                     userAgent.includes("Safari") ? "Safari" : "Unknown";
+      const deviceType = userAgent.includes("Mobile") ? "mobile" : "desktop";
+      const geo = fingerprint?.timezone?.includes("Asia") ? "Asia" :
+                  fingerprint?.timezone?.includes("Europe") ? "EU" :
+                  fingerprint?.timezone?.includes("America") ? "US East" : "Unknown";
+      const region = geo.toLowerCase().replace(" ", "-");
+
+      const baseline = user ? {
+        primaryDevice: user.primaryDevice,
+        primaryRegion: user.primaryRegion,
+        avgTypingSpeed: user.avgTypingSpeed,
+        typicalLoginWindow: user.typicalLoginWindow,
+      } : undefined;
+
+      const breakdown = calculateRiskBreakdown(
+        { 
+          device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+          deviceType,
+          geo,
+          region,
+          typingSpeed: typingMetrics?.typingSpeed || 45,
+          loginAttempts: 1,
+          loginTime: new Date().getHours(),
+        },
+        baseline
+      );
+
+      const enhancedFactors = calculateEnhancedRiskFactors(
+        clientIp,
+        user?.lastLoginIp,
+        user?.lastLoginTime,
+        user?.lastLoginGeo,
+        geo,
+        typingMetrics,
+        fingerprint
+      );
+
+      // Get AI model prediction
+      const trainingFeatures = extractTrainingFeatures(
+        typingMetrics || { typingSpeed: 45 },
+        fingerprint,
+        null,
+        geo,
+        user?.lastLoginGeo || null,
+        1,
+        user?.password === password
+      );
+      
+      const aiPrediction = fraudModel.predict(trainingFeatures);
+
+      // Calculate combined risk score
+      const baseScore = breakdown.deviceDrift + breakdown.geoDrift + breakdown.typingDrift + 
+                       breakdown.timingAnomaly + breakdown.attemptsMultiplier;
+      const enhancedScore = enhancedFactors.ipReputation + enhancedFactors.impossibleTravel + 
+                           enhancedFactors.velocityScore + enhancedFactors.browserPatternScore + 
+                           enhancedFactors.botLikelihoodScore + enhancedFactors.behavioralScore;
+      const aiScore = aiPrediction.score * 0.3;
+      const riskScore = Math.min(100, baseScore + Math.floor(enhancedScore / 2) + Math.floor(aiScore));
+      
+      const rules = await storage.getRules();
+      const riskLevel = getRiskLevel(riskScore);
+      const decision = getDecision(riskScore, rules);
+      const hiddenReason = getHiddenReason(breakdown, enhancedFactors);
+
+      // Check credentials
+      const credentialsValid = user && user.password === password;
+
+      // Log the simulation attempt with full metadata for ML training
+      const simulationAttempt: LoginAttempt = {
+        id: randomUUID(),
+        timestamp: new Date().toISOString(),
+        userId: user?.id,
+        username,
+        ip: clientIp,
+        device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+        deviceType,
+        geo,
+        region,
+        fingerprint,
+        riskScore,
+        riskLevel,
+        decision,
+        breakdown,
+        enhancedFactors: {
+          ...enhancedFactors,
+          aiModelAnomalyScore: aiPrediction.score,
+        },
+        reason: generateExplanation(breakdown, riskScore, decision),
+        success: credentialsValid && (decision === "allow" || decision === "alert"),
+        requiresOtp: false,
+        loginSource: "simulation",
+        hiddenReason: `${hiddenReason} | AI Score: ${aiPrediction.score} | Simulation Mode`,
+      };
+
+      await storage.addLoginAttempt(simulationAttempt);
+
+      // Train the model with this sample
+      fraudModel.addSample(trainingFeatures, decision === "block" || decision === "challenge");
+
+      // Return ONLY success/failure - no risk data exposed
+      if (credentialsValid && (decision === "allow" || decision === "alert")) {
+        return res.json({ success: true });
+      } else {
+        return res.json({ success: false });
+      }
+    } catch (error) {
+      console.error("Simulation error:", error);
+      res.status(500).json({ error: "Simulation failed", success: false });
+    }
+  });
+
   // AI Model endpoints (admin only)
   app.get("/api/admin/model/status", async (req, res) => {
     if (!req.session.userId || req.session.role !== "admin") {

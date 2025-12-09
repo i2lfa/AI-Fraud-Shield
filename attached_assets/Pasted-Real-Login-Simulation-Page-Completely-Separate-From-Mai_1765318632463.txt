@@ -1,0 +1,139 @@
+Real Login Simulation Page (Completely Separate From Main Admin Login & Engine Login)
+
+You already have the entire AI Fraud Shield project in your environment.
+Now I want you to ADD a NEW login simulation page that is completely SEPARATE from:
+
+the main system login
+
+the admin login
+
+the engine testing pages
+
+the risk simulator
+
+the model playground
+
+⚠️ This new page must NOT authenticate users into the system.
+It must ONLY simulate login attempts and send them to the risk engine.
+
+Your tasks:
+1. Create a NEW, standalone page at /real-login
+
+This page must be completely separate from:
+
+/login (main admin login)
+
+/simulator (risk engine test)
+
+/model-playground (ML model test)
+
+This is a side page used only to TEST real login attempts, not to enter the system.
+
+It must NOT redirect the user into the dashboard or any protected route.
+
+2. Implement a fully isolated login simulation flow
+
+When a user enters:
+
+username
+
+password
+
+You must:
+
+Send the attempt to the existing Risk Engine
+
+Apply ALL active risk factors:
+
+device fingerprint
+
+IP + geolocation
+
+typing speed
+
+browser metadata
+
+rule‑based scoring
+
+any existing engine logic
+
+⚠️ But none of this internal logic should appear to the user.
+
+3. Every attempt must be logged
+
+Store every attempt in the project's existing logging mechanism.
+
+Log fields (NOT shown to user):
+
+username
+
+timestamp
+
+risk result
+
+detected anomalies
+
+success/failure
+
+full detailed metadata
+
+These will be used for future AI model training.
+
+4. Very simple user-facing output
+
+After evaluating the attempt:
+
+If success →
+
+Show a simple success image or success screen.
+No dashboard access, no navigation, no tokens.
+
+If fail →
+
+Show a simple rejection/failure image.
+Again, no sensitive info displayed.
+
+⚠️ No risk score, no rule triggers, no IP info, no device info is shown to the user.
+
+5. This page must NOT authenticate the user
+
+It must NOT log the user into the real system
+
+It must NOT grant access to the dashboard
+
+It must NOT issue tokens or sessions
+
+It must NOT replace the real login page
+
+This is purely a realistic login attempt simulator for collecting real-world attempts under the current Risk Engine.
+
+6. The Risk Engine remains isolated
+
+The engine code stays unchanged
+
+This page only calls it
+
+No merging of logic
+
+No modifications to admin login flow
+
+7. Prepare stored attempts for future ML training
+
+Do NOT train a model now.
+Just store all input/output data to be used later.
+
+8. Expected final result
+
+A new route /real-login
+
+A standalone page separate from all other login or test pages
+
+Full risk evaluation
+
+Full logging
+
+Minimal success/failure UI
+
+Zero access to the admin or dashboard
+
+All logic hidden from the user

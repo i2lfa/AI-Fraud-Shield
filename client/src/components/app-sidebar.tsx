@@ -12,6 +12,7 @@ import {
   Lock,
   Home,
   Brain,
+  Fingerprint,
 } from "lucide-react";
 import {
   Sidebar,
@@ -56,6 +57,11 @@ const mainItems = [
     title: "AI Model Playground",
     url: "/model-playground",
     icon: Brain,
+  },
+  {
+    title: "Real Login Simulation",
+    url: "/real-login",
+    icon: Fingerprint,
   },
 ];
 
