@@ -592,6 +592,71 @@ export async function registerRoutes(
     res.send(modelData);
   });
 
+  // Model prediction endpoint - allows testing the model
+  app.post("/api/model/predict", async (req, res) => {
+    try {
+      const {
+        typingSpeed,
+        keystrokeCount,
+        totalTypingTime,
+        hourOfDay,
+        dayOfWeek,
+        deviceConsistency,
+        geoDistance,
+        attemptCount,
+        fingerprintStability,
+        passwordCorrect,
+      } = req.body;
+
+      const features = {
+        typingSpeed: typingSpeed ?? 50,
+        keystrokeCount: keystrokeCount ?? 25,
+        totalTypingTime: totalTypingTime ?? 5000,
+        hourOfDay: hourOfDay ?? 14,
+        dayOfWeek: dayOfWeek ?? 2,
+        deviceConsistency: deviceConsistency ?? 0.9,
+        geoDistance: geoDistance ?? 50,
+        attemptCount: attemptCount ?? 1,
+        fingerprintStability: fingerprintStability ?? 0.85,
+        passwordCorrect: passwordCorrect ?? 1,
+      };
+
+      const prediction = fraudModel.predict(features);
+      const rules = await storage.getRules();
+      
+      // Calculate risk level and decision based on the score
+      const riskLevel = getRiskLevel(prediction.score);
+      const decision = getDecision(prediction.score, rules);
+
+      // Calculate feature breakdown scores
+      const modelState = fraudModel.getModelState();
+      const breakdown = {
+        typingScore: Math.round(Math.max(0, Math.min(100, 
+          Math.abs(features.typingSpeed - 55) / 55 * 100
+        ))),
+        deviceScore: Math.round((1 - features.deviceConsistency) * 100),
+        geoScore: Math.round(Math.min(100, features.geoDistance / 50)),
+        timeScore: Math.round(
+          (features.hourOfDay < 6 || features.hourOfDay > 22) ? 70 : 
+          (features.hourOfDay < 8 || features.hourOfDay > 18) ? 30 : 10
+        ),
+        velocityScore: Math.round(Math.min(100, (features.attemptCount - 1) * 20)),
+      };
+
+      res.json({
+        isAnomaly: prediction.isAnomaly,
+        score: prediction.score,
+        confidence: prediction.confidence,
+        riskLevel,
+        decision,
+        breakdown,
+      });
+    } catch (error) {
+      console.error("Model prediction error:", error);
+      res.status(500).json({ error: "Prediction failed" });
+    }
+  });
+
   app.get("/api/admin/login-attempts", async (req, res) => {
     if (!req.session.userId || req.session.role !== "admin") {
       return res.status(403).json({ error: "Admin access required" });

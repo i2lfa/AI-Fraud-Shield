@@ -20,6 +20,7 @@ import RealLogin from "@/pages/real-login";
 import RealHome from "@/pages/real-home";
 import UserDashboard from "@/pages/user-dashboard";
 import AdminPanel from "@/pages/admin-panel";
+import ModelPlayground from "@/pages/model-playground";
 
 function PublicRoutes() {
   return (
@@ -44,6 +45,7 @@ function ProtectedRoutes() {
       <Route path="/user-dashboard" component={UserDashboard} />
       <Route path="/real-home" component={RealHome} />
       <Route path="/admin" component={AdminPanel} />
+      <Route path="/model-playground" component={ModelPlayground} />
       <Route component={NotFound} />
     </Switch>
   );

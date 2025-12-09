@@ -11,6 +11,7 @@ import {
   LogOut,
   Lock,
   Home,
+  Brain,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,11 @@ const mainItems = [
     title: "Risk Simulator",
     url: "/simulator",
     icon: Zap,
+  },
+  {
+    title: "AI Model Playground",
+    url: "/model-playground",
+    icon: Brain,
   },
 ];
 
