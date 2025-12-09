@@ -193,18 +193,17 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      className="pl-10 pr-10"
+                      className="pl-10 pr-12"
                       required
                     />
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
+                      data-testid="button-toggle-password"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </>
