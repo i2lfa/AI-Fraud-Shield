@@ -111,74 +111,74 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* DARK MODE - Tweakcn Premium Dark */
+/* DARK MODE - UI Layouts Premium Dark with Blue Glow */
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 8;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .08);
+  --elevate-1: rgba(255,255,255, .05);
+  --elevate-2: rgba(255,255,255, .10);
   
-  /* Deep Black Background like Tweakcn */
-  --background: 0 0% 4%;
-  --foreground: 0 0% 98%;
-  --border: 0 0% 14%;
-  --card: 0 0% 8%;
-  --card-foreground: 0 0% 98%;
-  --card-border: 0 0% 12%;
+  /* Deep Black Background with Blue tint */
+  --background: 222 47% 5%;
+  --foreground: 210 40% 98%;
+  --border: 215 25% 15%;
+  --card: 220 40% 8%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 215 30% 12%;
   
-  /* Sidebar - Even Darker */
-  --sidebar: 0 0% 5%;
-  --sidebar-foreground: 0 0% 98%;
-  --sidebar-border: 0 0% 12%;
-  --sidebar-primary: 0 0% 100%;
-  --sidebar-primary-foreground: 0 0% 9%;
-  --sidebar-accent: 0 0% 12%;
-  --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-ring: 0 0% 100%;
+  /* Sidebar - Deep Dark Blue */
+  --sidebar: 222 47% 4%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 215 30% 12%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 215 30% 14%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-ring: 217 91% 60%;
   
   /* Popover */
-  --popover: 0 0% 10%;
-  --popover-foreground: 0 0% 98%;
-  --popover-border: 0 0% 16%;
+  --popover: 220 40% 10%;
+  --popover-foreground: 210 40% 98%;
+  --popover-border: 215 30% 16%;
   
-  /* Primary - Pure White on Dark */
-  --primary: 0 0% 100%;
-  --primary-foreground: 0 0% 9%;
+  /* Primary - Vibrant Blue */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
   
-  /* Secondary - Subtle Gray */
-  --secondary: 0 0% 14%;
-  --secondary-foreground: 0 0% 98%;
+  /* Secondary */
+  --secondary: 215 30% 14%;
+  --secondary-foreground: 210 40% 98%;
   
-  /* Muted - Darker Gray */
-  --muted: 0 0% 12%;
-  --muted-foreground: 0 0% 55%;
+  /* Muted */
+  --muted: 215 25% 12%;
+  --muted-foreground: 215 20% 55%;
   
   /* Accent */
-  --accent: 0 0% 14%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 215 30% 14%;
+  --accent-foreground: 210 40% 98%;
   
   /* Destructive */
-  --destructive: 0 62% 50%;
+  --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
   
   /* Input & Ring */
-  --input: 0 0% 16%;
-  --ring: 0 0% 100%;
+  --input: 215 30% 18%;
+  --ring: 217 91% 60%;
   
-  /* Charts - Elegant Dark Palette */
-  --chart-1: 0 0% 75%;
-  --chart-2: 142 55% 50%;
-  --chart-3: 38 80% 55%;
-  --chart-4: 0 65% 55%;
-  --chart-5: 280 55% 65%;
+  /* Charts - Vibrant Blue Palette */
+  --chart-1: 217 91% 60%;
+  --chart-2: 142 70% 50%;
+  --chart-3: 38 90% 55%;
+  --chart-4: 0 72% 55%;
+  --chart-5: 280 70% 65%;
   
-  /* Risk Colors - Softer for Dark Mode */
-  --risk-critical: 0 65% 55%;
-  --risk-high: 25 85% 55%;
-  --risk-medium: 45 85% 55%;
-  --risk-low: 142 55% 50%;
-  --risk-safe: 210 80% 60%;
+  /* Risk Colors */
+  --risk-critical: 0 72% 55%;
+  --risk-high: 25 90% 55%;
+  --risk-medium: 45 90% 55%;
+  --risk-low: 142 70% 50%;
+  --risk-safe: 217 91% 60%;
   
   /* Dark mode shadows - Very subtle */
   --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.40);
@@ -216,19 +216,22 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
   
-  /* Premium Card Shine Effect - Dark Mode */
+  /* Premium Card Shine Effect - Dark Mode with Blue Glow */
   .dark .card-shine {
     position: relative;
     overflow: hidden;
     background: linear-gradient(
       180deg,
-      hsl(0 0% 12%) 0%,
-      hsl(0 0% 8%) 100%
+      hsl(220 40% 12%) 0%,
+      hsl(220 40% 8%) 100%
     );
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.15);
+    box-shadow: 
+      0 0 0 1px rgba(59, 130, 246, 0.05),
+      0 4px 20px rgba(0, 0, 0, 0.3);
   }
   
-  /* Top Edge Light Sweep */
+  /* Top Edge Blue Light Sweep */
   .dark .card-shine::before {
     content: "";
     position: absolute;
@@ -239,25 +242,25 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.15) 25%,
-      rgba(255, 255, 255, 0.25) 50%,
-      rgba(255, 255, 255, 0.15) 75%,
+      rgba(59, 130, 246, 0.3) 20%,
+      rgba(147, 197, 253, 0.5) 50%,
+      rgba(59, 130, 246, 0.3) 80%,
       transparent 100%
     );
     pointer-events: none;
   }
   
-  /* Subtle Inner Glow */
+  /* Subtle Blue Inner Glow */
   .dark .card-shine::after {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: 80px;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.03) 0%,
+      rgba(59, 130, 246, 0.08) 0%,
       transparent 100%
     );
     pointer-events: none;
@@ -266,40 +269,50 @@
   
   /* Glass Card Effect */
   .dark .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(59, 130, 246, 0.05);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(59, 130, 246, 0.15);
   }
   
-  /* Subtle Glow Effects */
+  /* Blue Glow Effects */
   .dark .glow {
     box-shadow: 
-      0 0 20px rgba(255, 255, 255, 0.03),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 0 30px rgba(59, 130, 246, 0.1),
+      0 0 60px rgba(59, 130, 246, 0.05),
+      inset 0 1px 0 rgba(147, 197, 253, 0.1);
   }
   
   .dark .glow-primary {
-    box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      0 0 40px rgba(59, 130, 246, 0.2),
+      0 0 80px rgba(59, 130, 246, 0.1);
   }
   
-  /* Dashboard Background Gradient */
+  /* Dashboard Background with Blue Radial Gradient */
   .dark .dashboard-bg {
     background: 
       radial-gradient(
-        ellipse at top,
-        rgba(255, 255, 255, 0.02) 0%,
+        ellipse 80% 50% at 50% -20%,
+        rgba(59, 130, 246, 0.15) 0%,
         transparent 50%
       ),
-      hsl(0 0% 4%);
+      hsl(222 47% 5%);
   }
   
-  /* Button Shine */
+  /* Button with Blue Shine */
   .dark .btn-shine {
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.1) 0%,
+      rgba(147, 197, 253, 0.15) 0%,
       transparent 50%
     );
+  }
+  
+  /* Blue Accent Glow for important elements */
+  .dark .accent-glow {
+    box-shadow: 
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 0 40px rgba(59, 130, 246, 0.15);
   }
 }
 
