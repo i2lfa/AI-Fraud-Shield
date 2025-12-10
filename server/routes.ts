@@ -1691,5 +1691,114 @@ export async function registerRoutes(
     }
   });
 
+  // ===========================================
+  // DEMO: SmartGate Partner Integration Demo
+  // This endpoint simulates how a partner would use our API
+  // ===========================================
+  app.post("/api/demo/smartgate/analyze", async (req, res) => {
+    try {
+      const { userIdentifier, fingerprint, typingMetrics } = req.body;
+      
+      const clientIp = req.ip || req.socket.remoteAddress || "0.0.0.0";
+      const ua = fingerprint?.userAgent || req.headers["user-agent"] || "Unknown";
+      
+      const device = ua.includes("Chrome") ? "Chrome" : 
+                     ua.includes("Firefox") ? "Firefox" : 
+                     ua.includes("Safari") ? "Safari" : "Unknown";
+      const deviceType = ua.includes("Mobile") ? "mobile" : "desktop";
+      
+      const tzLower = (fingerprint?.timezone || "").toLowerCase();
+      let geo = "Unknown";
+      let region = "unknown";
+      if (tzLower.includes("asia") || tzLower.includes("riyadh")) { geo = "Middle East"; region = "me-central"; }
+      else if (tzLower.includes("europe")) { geo = "EU Central"; region = "eu-central"; }
+      else if (tzLower.includes("america")) { geo = "US East"; region = "us-east"; }
+
+      const breakdown = calculateRiskBreakdown(
+        { 
+          device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+          deviceType,
+          geo,
+          region,
+          typingSpeed: typingMetrics?.typingSpeed || 45,
+          loginAttempts: 1,
+          loginTime: new Date().getHours(),
+        },
+        undefined
+      );
+
+      const enhancedFactors = calculateEnhancedRiskFactors(
+        clientIp,
+        undefined,
+        undefined,
+        undefined,
+        geo,
+        typingMetrics,
+        fingerprint
+      );
+
+      const trainingFeatures = extractTrainingFeatures(
+        typingMetrics || { typingSpeed: 45 },
+        fingerprint,
+        null,
+        geo,
+        null,
+        1,
+        true
+      );
+      
+      const aiPrediction = fraudModel.predict(trainingFeatures);
+
+      const baseScore = breakdown.deviceDrift + breakdown.geoDrift + breakdown.typingDrift + 
+                       breakdown.timingAnomaly + breakdown.attemptsMultiplier;
+      const enhancedScore = enhancedFactors.ipReputation + enhancedFactors.impossibleTravel + 
+                           enhancedFactors.velocityScore + enhancedFactors.browserPatternScore + 
+                           enhancedFactors.botLikelihoodScore + enhancedFactors.behavioralScore;
+      const aiScore = aiPrediction.score * 0.3;
+      const riskScore = Math.min(100, baseScore + Math.floor(enhancedScore / 2) + Math.floor(aiScore));
+      
+      const rules = await storage.getRules();
+      const riskLevel = getRiskLevel(riskScore);
+      const decision = getDecision(riskScore, rules);
+      
+      const confidence = Math.round((
+        (fingerprint?.userAgent ? 1 : 0) +
+        (fingerprint?.screenResolution ? 1 : 0) +
+        (fingerprint?.timezone ? 1 : 0) +
+        (typingMetrics?.typingSpeed ? 1 : 0)
+      ) / 4 * 100);
+
+      let recommendation = "تم السماح بتسجيل الدخول";
+      if (decision === "block") {
+        recommendation = "تم رفض الدخول - تم اكتشاف نشاط مشبوه";
+      } else if (decision === "challenge") {
+        recommendation = "مطلوب تحقق إضافي من هويتك";
+      } else if (decision === "alert") {
+        recommendation = "تم السماح مع مراقبة الجلسة";
+      }
+
+      const sessionId = `demo_${randomUUID()}`;
+
+      res.json({
+        sessionId,
+        riskScore,
+        riskLevel,
+        decision,
+        confidence,
+        factors: {
+          deviceRisk: breakdown.deviceDrift,
+          behaviorRisk: breakdown.typingDrift + Math.floor(enhancedFactors.behavioralScore),
+          geoRisk: breakdown.geoDrift + Math.floor(enhancedFactors.impossibleTravel),
+          velocityRisk: Math.floor(enhancedFactors.velocityScore),
+        },
+        recommendation,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Demo API error:", error);
+      res.status(500).json({ error: "Analysis failed" });
+    }
+  });
+
   return httpServer;
 }

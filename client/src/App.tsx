@@ -22,6 +22,20 @@ import UserDashboard from "@/pages/user-dashboard";
 import AdminPanel from "@/pages/admin-panel";
 import ModelPlayground from "@/pages/model-playground";
 import PartnerPortal from "@/pages/partner-portal";
+import SmartGateLanding from "@/pages/demo-partner/smartgate-landing";
+import SmartGateLogin from "@/pages/demo-partner/smartgate-login";
+import SmartGateDashboard from "@/pages/demo-partner/smartgate-dashboard";
+
+function DemoRoutes() {
+  return (
+    <Switch>
+      <Route path="/demo/smartgate" component={SmartGateLanding} />
+      <Route path="/demo/smartgate/login" component={SmartGateLogin} />
+      <Route path="/demo/smartgate/dashboard" component={SmartGateDashboard} />
+      <Route component={SmartGateLanding} />
+    </Switch>
+  );
+}
 
 function PublicRoutes() {
   return (
@@ -57,6 +71,11 @@ function AppContent() {
   const [location] = useLocation();
   
   const isPublicRoute = location === "/login" || location === "/real-login";
+  const isDemoRoute = location.startsWith("/demo/");
+  
+  if (isDemoRoute) {
+    return <DemoRoutes />;
+  }
   
   if (isPublicRoute) {
     return <PublicRoutes />;
