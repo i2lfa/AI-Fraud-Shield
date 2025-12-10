@@ -151,7 +151,7 @@ export default function Login() {
       
       <Card className="w-full max-w-md relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center p-2 glow-primary">
+          <div className="mx-auto w-28 h-28 flex items-center justify-center">
             <img src={logoImage} alt="AI Fraud Shield" className="w-full h-full object-contain" />
           </div>
           <div>

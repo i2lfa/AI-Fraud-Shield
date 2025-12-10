@@ -109,7 +109,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-1">
+          <div className="flex h-14 w-14 items-center justify-center">
             <img src={logoImage} alt="AI Fraud Shield" className="h-full w-full object-contain" />
           </div>
           <div className="flex flex-col">
