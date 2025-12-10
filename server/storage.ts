@@ -29,8 +29,11 @@ export interface IStorage {
   getAuthUserById(id: string): Promise<AuthUser | undefined>;
   getAllAuthUsers(): Promise<AuthUser[]>;
   createOtpSession(userId: string): Promise<OtpSession>;
+  createOtpSessionWithData(data: { id: string; userId: string; code: string; expiresAt: string; verified: boolean; attemptId: string }): Promise<OtpSession>;
   getOtpSession(sessionId: string): Promise<OtpSession | undefined>;
+  getOtpSessionByAttemptId(attemptId: string): Promise<OtpSession | undefined>;
   verifyOtp(sessionId: string, code: string): Promise<boolean>;
+  verifyOtpSession(sessionId: string): Promise<void>;
   addLoginAttempt(attempt: LoginAttempt): Promise<LoginAttempt>;
   getLoginAttempts(): Promise<LoginAttempt[]>;
   getLoginAttemptsByUser(userId: string): Promise<LoginAttempt[]>;
@@ -349,6 +352,36 @@ export class MemStorage implements IStorage {
 
   async getOtpSession(sessionId: string): Promise<OtpSession | undefined> {
     return this.otpSessions.get(sessionId);
+  }
+
+  async createOtpSessionWithData(data: { id: string; userId: string; code: string; expiresAt: string; verified: boolean; attemptId: string }): Promise<OtpSession> {
+    const session: OtpSession = {
+      id: data.id,
+      userId: data.userId,
+      code: data.code,
+      expiresAt: data.expiresAt,
+      verified: data.verified,
+      attempts: 0,
+      attemptId: data.attemptId,
+    };
+    this.otpSessions.set(session.id, session);
+    return session;
+  }
+
+  async getOtpSessionByAttemptId(attemptId: string): Promise<OtpSession | undefined> {
+    for (const session of this.otpSessions.values()) {
+      if (session.attemptId === attemptId) {
+        return session;
+      }
+    }
+    return undefined;
+  }
+
+  async verifyOtpSession(sessionId: string): Promise<void> {
+    const session = this.otpSessions.get(sessionId);
+    if (session) {
+      session.verified = true;
+    }
   }
 
   async verifyOtp(sessionId: string, code: string): Promise<boolean> {

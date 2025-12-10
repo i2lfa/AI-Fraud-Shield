@@ -218,6 +218,7 @@ export const otpSessionSchema = z.object({
   expiresAt: z.string(),
   verified: z.boolean(),
   attempts: z.number(),
+  attemptId: z.string().optional(),
 });
 
 export type OtpSession = z.infer<typeof otpSessionSchema>;

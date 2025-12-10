@@ -1823,25 +1823,72 @@ export async function registerRoutes(
         });
       }
 
+      const finalDecision = !isValidUser ? "block" : decision;
+      
+      // Generate OTP for challenge decision
+      if (finalDecision === "challenge" && sgUser) {
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        await storage.createOtpSessionWithData({
+          id: `otp_${randomUUID()}`,
+          userId: sgUser.id,
+          code: otpCode,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          verified: false,
+          attemptId: sessionId,
+        });
+        
+        console.log(`\n[SmartGate OTP] ====================================`);
+        console.log(`[SmartGate OTP] User: ${sgUser.fullName} (${userIdentifier})`);
+        console.log(`[SmartGate OTP] Code: ${otpCode}`);
+        console.log(`[SmartGate OTP] Session: ${sessionId}`);
+        console.log(`[SmartGate OTP] ====================================\n`);
+      }
+
+      // Return clean response - NO risk data exposed to user
       res.json({
         sessionId,
-        riskScore,
-        riskLevel,
-        decision: !isValidUser ? "block" : decision,
-        confidence,
-        factors: {
-          deviceRisk: breakdown.deviceDrift,
-          behaviorRisk: breakdown.typingDrift + Math.floor(enhancedFactors.behavioralScore),
-          geoRisk: breakdown.geoDrift + Math.floor(enhancedFactors.impossibleTravel),
-          velocityRisk: Math.floor(enhancedFactors.velocityScore),
-        },
+        decision: finalDecision,
         recommendation: !isValidUser ? "بيانات الدخول غير صحيحة" : recommendation,
-        timestamp,
         user: isValidUser ? { fullName: sgUser?.fullName } : undefined,
       });
     } catch (error) {
       console.error("Demo API error:", error);
       res.status(500).json({ error: "Analysis failed" });
+    }
+  });
+
+  // SmartGate OTP Verification
+  app.post("/api/demo/smartgate/verify-otp", async (req, res) => {
+    try {
+      const { sessionId, otp } = req.body;
+      
+      if (!sessionId || !otp) {
+        return res.status(400).json({ success: false, error: "معرف الجلسة والرمز مطلوبان" });
+      }
+
+      const otpSession = await storage.getOtpSessionByAttemptId(sessionId);
+      
+      if (!otpSession) {
+        return res.json({ success: false, error: "جلسة التحقق غير موجودة" });
+      }
+
+      if (new Date(otpSession.expiresAt) < new Date()) {
+        return res.json({ success: false, error: "انتهت صلاحية الرمز. حاول مرة أخرى" });
+      }
+
+      if (otpSession.code !== otp) {
+        return res.json({ success: false, error: "رمز التحقق غير صحيح" });
+      }
+
+      // Mark OTP as verified
+      await storage.verifyOtpSession(otpSession.id);
+
+      console.log(`[SmartGate OTP] Verified successfully for session: ${sessionId}`);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("OTP verification error:", error);
+      res.status(500).json({ success: false, error: "فشل التحقق" });
     }
   });
 

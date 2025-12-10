@@ -29,17 +29,111 @@ interface TypingMetrics {
 
 interface FraudAnalysis {
   sessionId: string;
-  riskScore: number;
-  riskLevel: string;
   decision: string;
-  confidence: number;
-  factors: {
-    deviceRisk: number;
-    behaviorRisk: number;
-    geoRisk: number;
-    velocityRisk: number;
-  };
   recommendation: string;
+  user?: { fullName: string };
+}
+
+function OtpVerification({ 
+  sessionId, 
+  onSuccess, 
+  onRetry 
+}: { 
+  sessionId: string; 
+  onSuccess: () => void; 
+  onRetry: () => void;
+}) {
+  const [otp, setOtp] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [error, setError] = useState("");
+  const { toast } = useToast();
+
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      setError("الرمز يجب أن يكون 6 أرقام");
+      return;
+    }
+
+    setIsVerifying(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/demo/smartgate/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, otp }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "تم التحقق بنجاح",
+          description: "جاري تحويلك للوحة التحكم",
+        });
+        setTimeout(onSuccess, 1000);
+      } else {
+        setError(result.error || "رمز التحقق غير صحيح");
+      }
+    } catch (err) {
+      setError("حدث خطأ في التحقق");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 text-center">
+        <Shield className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+        <p className="text-sm text-slate-300">
+          تم إرسال رمز التحقق إلى بريدك الإلكتروني
+        </p>
+        <p className="text-xs text-slate-400 mt-1">
+          يرجى إدخال الرمز المكون من 6 أرقام
+        </p>
+      </div>
+
+      <Input 
+        placeholder="أدخل رمز التحقق"
+        value={otp}
+        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        className="bg-slate-700/50 border-slate-600 text-white text-center text-2xl tracking-widest"
+        data-testid="input-otp"
+        maxLength={6}
+        dir="ltr"
+      />
+
+      {error && (
+        <p className="text-red-400 text-sm text-center">{error}</p>
+      )}
+
+      <Button 
+        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600"
+        onClick={handleVerify}
+        disabled={isVerifying || otp.length !== 6}
+        data-testid="button-verify-otp"
+      >
+        {isVerifying ? (
+          <>
+            <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+            جاري التحقق...
+          </>
+        ) : (
+          "تأكيد الرمز"
+        )}
+      </Button>
+
+      <Button 
+        variant="ghost" 
+        className="w-full text-slate-400"
+        onClick={onRetry}
+        data-testid="button-back"
+      >
+        العودة لتسجيل الدخول
+      </Button>
+    </div>
+  );
 }
 
 export default function SmartGateLogin() {
@@ -328,54 +422,17 @@ export default function SmartGateLogin() {
                   <h2 className={`text-2xl font-bold mt-4 ${getDecisionColor(analysis?.decision || "")}`}>
                     {getDecisionText(analysis?.decision || "")}
                   </h2>
+                  {analysis?.user?.fullName && (
+                    <p className="text-white mt-3 text-lg">
+                      مرحباً، {analysis.user.fullName}
+                    </p>
+                  )}
                   <p className="text-slate-400 mt-2">
                     {analysis?.recommendation}
                   </p>
                 </div>
 
                 <div className="space-y-6">
-                  <div className="text-center">
-                    <div className="text-sm text-slate-400 mb-2">درجة المخاطرة</div>
-                    <div className={`inline-flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br ${getRiskColor(analysis?.riskScore || 0)} text-white text-2xl font-bold`}>
-                      {analysis?.riskScore}
-                    </div>
-                    <div className="text-sm text-slate-400 mt-2">
-                      مستوى: <span className="text-white">{analysis?.riskLevel}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                      <div className="text-xs text-slate-400">مخاطر الجهاز</div>
-                      <div className="text-lg font-semibold text-white">{analysis?.factors.deviceRisk}</div>
-                    </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                      <div className="text-xs text-slate-400">مخاطر السلوك</div>
-                      <div className="text-lg font-semibold text-white">{analysis?.factors.behaviorRisk}</div>
-                    </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                      <div className="text-xs text-slate-400">مخاطر الموقع</div>
-                      <div className="text-lg font-semibold text-white">{analysis?.factors.geoRisk}</div>
-                    </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                      <div className="text-xs text-slate-400">مخاطر السرعة</div>
-                      <div className="text-lg font-semibold text-white">{analysis?.factors.velocityRisk}</div>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-700/30 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Shield className="h-4 w-4 text-blue-400" />
-                      <span className="text-sm font-medium text-white">تحليل AI Fraud Shield</span>
-                    </div>
-                    <p className="text-xs text-slate-400">
-                      معرف الجلسة: <code className="text-blue-400">{analysis?.sessionId}</code>
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      نسبة الثقة: <span className="text-white">{analysis?.confidence}%</span>
-                    </p>
-                  </div>
-
                   {(analysis?.decision === "allow" || analysis?.decision === "alert") && (
                     <div className="text-center text-sm text-slate-400">
                       <Loader2 className="h-4 w-4 animate-spin inline ml-2" />
@@ -393,22 +450,23 @@ export default function SmartGateLogin() {
                         keyPressTimesRef.current = [];
                         startTimeRef.current = Date.now();
                       }}
+                      data-testid="button-retry"
                     >
                       المحاولة مرة أخرى
                     </Button>
                   )}
 
                   {analysis?.decision === "challenge" && (
-                    <div className="space-y-3">
-                      <Input 
-                        placeholder="أدخل رمز التحقق المرسل لجوالك"
-                        className="bg-slate-700/50 border-slate-600 text-white text-center"
-                        data-testid="input-otp"
-                      />
-                      <Button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600">
-                        تأكيد الرمز
-                      </Button>
-                    </div>
+                    <OtpVerification 
+                      sessionId={analysis.sessionId}
+                      onSuccess={() => setLocation("/demo/smartgate/dashboard")}
+                      onRetry={() => {
+                        setShowAnalysis(false);
+                        setAnalysis(null);
+                        keyPressTimesRef.current = [];
+                        startTimeRef.current = Date.now();
+                      }}
+                    />
                   )}
                 </div>
               </CardContent>
