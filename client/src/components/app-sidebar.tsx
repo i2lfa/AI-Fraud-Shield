@@ -12,7 +12,7 @@ import {
   Home,
   Brain,
 } from "lucide-react";
-import logoImage from "@assets/generated_images/simple_shield_security_logo.png";
+import logoImage from "@assets/generated_images/minimal_solid_shield_logo.png";
 import {
   Sidebar,
   SidebarContent,
