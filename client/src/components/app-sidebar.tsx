@@ -6,13 +6,13 @@ import {
   Activity,
   User,
   Settings,
-  Shield,
   Zap,
   LogOut,
   Lock,
   Home,
   Brain,
 } from "lucide-react";
+import logoImage from "@assets/logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -109,11 +109,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
-            <Shield className="h-6 w-6 text-primary-foreground" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-1">
+            <img src={logoImage} alt="AI Fraud Shield" className="h-full w-full object-contain" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-sidebar-foreground">AI Fraud Shield</span>
+            <span className="text-sm font-bold text-sidebar-foreground tracking-tight">AI Fraud Shield</span>
             <span className="text-xs text-muted-foreground">Security Platform</span>
           </div>
         </div>
