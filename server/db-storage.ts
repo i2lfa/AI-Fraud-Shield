@@ -597,6 +597,9 @@ export async function seedDatabase() {
     enableAlerts: true,
   });
 
+  // Seed event logs for dashboard data
+  await seedEventLogs();
+
   console.log("Database seeded successfully!");
 }
 
@@ -613,4 +616,58 @@ function generateRiskHistory(days: number, minScore: number, maxScore: number) {
     });
   }
   return history;
+}
+
+async function seedEventLogs() {
+  const devices = ["Windows - Chrome", "macOS - Safari", "Linux - Firefox", "macOS - Chrome", "Windows - Edge"];
+  const deviceTypes = ["desktop", "desktop", "desktop", "desktop", "desktop"];
+  const regions = ["US East", "US West", "EU Central", "Asia East", "Asia West"];
+  const geos = ["New York, US", "San Francisco, US", "Frankfurt, DE", "Tokyo, JP", "Singapore, SG"];
+  const ips = ["192.168.1.1", "10.0.0.1", "172.16.0.1", "203.0.113.1", "198.51.100.1"];
+  const users = ["usr_000", "usr_001", "usr_002", "usr_004", "usr_005"];
+  const usernames = ["john", "john.smith", "sarah.jones", "emily.chen", "david.brown"];
+  
+  const events = [];
+  const now = new Date();
+  
+  for (let i = 0; i < 50; i++) {
+    const userIndex = Math.floor(Math.random() * users.length);
+    const regionIndex = Math.floor(Math.random() * regions.length);
+    const deviceIndex = Math.floor(Math.random() * devices.length);
+    const riskScore = Math.floor(Math.random() * 100);
+    const decision = riskScore >= 80 ? "block" : riskScore >= 60 ? "challenge" : riskScore >= 40 ? "alert" : "allow";
+    const riskLevel = riskScore >= 80 ? "critical" : riskScore >= 60 ? "high" : riskScore >= 40 ? "medium" : riskScore >= 20 ? "low" : "safe";
+    
+    const timestamp = new Date(now);
+    timestamp.setHours(timestamp.getHours() - Math.floor(Math.random() * 72));
+    
+    events.push({
+      id: `evt_${String(i).padStart(3, '0')}`,
+      timestamp: timestamp.toISOString(),
+      userId: users[userIndex],
+      username: usernames[userIndex],
+      device: devices[deviceIndex],
+      deviceType: deviceTypes[deviceIndex],
+      geo: geos[regionIndex],
+      region: regions[regionIndex],
+      ip: ips[Math.floor(Math.random() * ips.length)],
+      riskScore,
+      riskLevel,
+      decision,
+      breakdown: { deviceDrift: 5, geoDrift: 10, typingDrift: 8, timingAnomaly: 3, attemptsMultiplier: 0 },
+      reason: `Login attempt with risk score ${riskScore}`,
+      latency: Math.floor(Math.random() * 200) + 50,
+    });
+  }
+  
+  await db.insert(eventLogsTable).values(events);
+}
+
+export async function ensureEventLogsExist() {
+  const existingLogs = await db.select().from(eventLogsTable).limit(1);
+  if (existingLogs.length === 0) {
+    console.log("Seeding event logs...");
+    await seedEventLogs();
+    console.log("Event logs seeded!");
+  }
 }

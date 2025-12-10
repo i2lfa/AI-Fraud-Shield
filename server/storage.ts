@@ -459,7 +459,7 @@ export class MemStorage implements IStorage {
 
 export const memStorage = new MemStorage();
 
-import { DbStorage, seedDatabase } from "./db-storage";
+import { DbStorage, seedDatabase, ensureEventLogsExist } from "./db-storage";
 
 export const dbStorage = new DbStorage();
 
@@ -469,6 +469,7 @@ export async function initializeStorage() {
   if (process.env.DATABASE_URL) {
     try {
       await seedDatabase();
+      await ensureEventLogsExist();
       storage = dbStorage;
       console.log("Using PostgreSQL database storage");
     } catch (error) {
