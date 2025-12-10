@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, User, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { Lock, User, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import logoImage from "@assets/logo.png";
 
 interface TypingMetrics {
   avgKeyDownTime: number;
@@ -150,11 +151,11 @@ export default function Login() {
       
       <Card className="w-full max-w-md relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Shield className="w-8 h-8 text-primary" />
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center p-2 glow-primary">
+            <img src={logoImage} alt="AI Fraud Shield" className="w-full h-full object-contain" />
           </div>
           <div>
-            <CardTitle className="text-2xl">AI Fraud Shield</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">AI Fraud Shield</CardTitle>
             <CardDescription className="mt-2">
               {requiresOtp ? "Enter verification code" : "Secure login with real-time fraud detection"}
             </CardDescription>
