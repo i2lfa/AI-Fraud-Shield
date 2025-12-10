@@ -11,6 +11,7 @@ import type {
   LoginAttempt,
   OtpSession,
   EnhancedRiskFactors,
+  Partner,
 } from "@shared/schema";
 import { getRiskLevel, getDecision } from "@shared/schema";
 
@@ -32,6 +33,15 @@ export interface IStorage {
   addLoginAttempt(attempt: LoginAttempt): Promise<LoginAttempt>;
   getLoginAttempts(): Promise<LoginAttempt[]>;
   getLoginAttemptsByUser(userId: string): Promise<LoginAttempt[]>;
+  // Partner API methods
+  createPartner(partner: Omit<Partner, 'id' | 'createdAt' | 'updatedAt' | 'totalRequests' | 'blockedRequests'>): Promise<Partner>;
+  getPartnerByClientId(clientId: string): Promise<Partner | undefined>;
+  getPartnerById(id: string): Promise<Partner | undefined>;
+  getAllPartners(): Promise<Partner[]>;
+  updatePartner(id: string, updates: Partial<Partner>): Promise<Partner | undefined>;
+  incrementPartnerStats(partnerId: string, blocked: boolean): Promise<void>;
+  getLogsByPartner(partnerId: string): Promise<EventLog[]>;
+  getLoginAttemptsByPartner(partnerId: string): Promise<LoginAttempt[]>;
 }
 
 const generateAuthUsers = (): AuthUser[] => {
@@ -252,6 +262,7 @@ export class MemStorage implements IStorage {
   private rules: SecurityRules;
   private otpSessions: Map<string, OtpSession>;
   private loginAttempts: LoginAttempt[];
+  private partners: Map<string, Partner>;
 
   constructor() {
     const authUsersList = generateAuthUsers();
@@ -262,6 +273,7 @@ export class MemStorage implements IStorage {
     this.rules = { ...defaultRules };
     this.otpSessions = new Map();
     this.loginAttempts = [];
+    this.partners = new Map();
   }
 
   async getUsers(): Promise<UserBaseline[]> {
@@ -359,6 +371,59 @@ export class MemStorage implements IStorage {
 
   async getLoginAttemptsByUser(userId: string): Promise<LoginAttempt[]> {
     return this.loginAttempts.filter(a => a.userId === userId);
+  }
+
+  // Partner methods
+  async createPartner(partner: Omit<Partner, 'id' | 'createdAt' | 'updatedAt' | 'totalRequests' | 'blockedRequests'>): Promise<Partner> {
+    const now = new Date().toISOString();
+    const newPartner: Partner = {
+      ...partner,
+      id: `partner_${randomUUID()}`,
+      totalRequests: 0,
+      blockedRequests: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.partners.set(newPartner.id, newPartner);
+    return newPartner;
+  }
+
+  async getPartnerByClientId(clientId: string): Promise<Partner | undefined> {
+    return Array.from(this.partners.values()).find(p => p.clientId === clientId);
+  }
+
+  async getPartnerById(id: string): Promise<Partner | undefined> {
+    return this.partners.get(id);
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    return Array.from(this.partners.values());
+  }
+
+  async updatePartner(id: string, updates: Partial<Partner>): Promise<Partner | undefined> {
+    const partner = this.partners.get(id);
+    if (!partner) return undefined;
+    const updated = { ...partner, ...updates, updatedAt: new Date().toISOString() };
+    this.partners.set(id, updated);
+    return updated;
+  }
+
+  async incrementPartnerStats(partnerId: string, blocked: boolean): Promise<void> {
+    const partner = this.partners.get(partnerId);
+    if (partner) {
+      partner.totalRequests++;
+      if (blocked) partner.blockedRequests++;
+      partner.updatedAt = new Date().toISOString();
+      this.partners.set(partnerId, partner);
+    }
+  }
+
+  async getLogsByPartner(partnerId: string): Promise<EventLog[]> {
+    return this.logs.filter(l => (l as any).partnerId === partnerId);
+  }
+
+  async getLoginAttemptsByPartner(partnerId: string): Promise<LoginAttempt[]> {
+    return this.loginAttempts.filter(a => (a as any).partnerId === partnerId);
   }
 
   async getDashboardStats(): Promise<DashboardStats> {

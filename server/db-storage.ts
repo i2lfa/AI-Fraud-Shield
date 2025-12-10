@@ -7,7 +7,8 @@ import {
   eventLogsTable, 
   securityRulesTable, 
   loginAttemptsTable, 
-  otpSessionsTable 
+  otpSessionsTable,
+  partnersTable,
 } from "@shared/schema";
 import type { 
   UserBaseline, 
@@ -17,6 +18,7 @@ import type {
   AuthUser,
   LoginAttempt,
   OtpSession,
+  Partner,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -477,6 +479,157 @@ export class DbStorage implements IStorage {
       recentEvents: logs.slice(0, 20),
       hourlyTrend,
     };
+  }
+
+  // Partner methods
+  async createPartner(partner: Omit<Partner, 'id' | 'createdAt' | 'updatedAt' | 'totalRequests' | 'blockedRequests'>): Promise<Partner> {
+    const now = new Date().toISOString();
+    const newPartner = {
+      ...partner,
+      id: `partner_${randomUUID()}`,
+      totalRequests: 0,
+      blockedRequests: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.insert(partnersTable).values(newPartner);
+    return newPartner;
+  }
+
+  async getPartnerByClientId(clientId: string): Promise<Partner | undefined> {
+    const rows = await db.select().from(partnersTable).where(eq(partnersTable.clientId, clientId));
+    if (rows.length === 0) return undefined;
+    const row = rows[0];
+    return {
+      id: row.id,
+      name: row.name,
+      clientId: row.clientId,
+      clientSecretHash: row.clientSecretHash,
+      webhookUrl: row.webhookUrl ?? undefined,
+      webhookSecret: row.webhookSecret ?? undefined,
+      logoUrl: row.logoUrl ?? undefined,
+      isActive: row.isActive,
+      rateLimitPerMinute: row.rateLimitPerMinute,
+      totalRequests: row.totalRequests,
+      blockedRequests: row.blockedRequests,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async getPartnerById(id: string): Promise<Partner | undefined> {
+    const rows = await db.select().from(partnersTable).where(eq(partnersTable.id, id));
+    if (rows.length === 0) return undefined;
+    const row = rows[0];
+    return {
+      id: row.id,
+      name: row.name,
+      clientId: row.clientId,
+      clientSecretHash: row.clientSecretHash,
+      webhookUrl: row.webhookUrl ?? undefined,
+      webhookSecret: row.webhookSecret ?? undefined,
+      logoUrl: row.logoUrl ?? undefined,
+      isActive: row.isActive,
+      rateLimitPerMinute: row.rateLimitPerMinute,
+      totalRequests: row.totalRequests,
+      blockedRequests: row.blockedRequests,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    const rows = await db.select().from(partnersTable);
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      clientId: row.clientId,
+      clientSecretHash: row.clientSecretHash,
+      webhookUrl: row.webhookUrl ?? undefined,
+      webhookSecret: row.webhookSecret ?? undefined,
+      logoUrl: row.logoUrl ?? undefined,
+      isActive: row.isActive,
+      rateLimitPerMinute: row.rateLimitPerMinute,
+      totalRequests: row.totalRequests,
+      blockedRequests: row.blockedRequests,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+  }
+
+  async updatePartner(id: string, updates: Partial<Partner>): Promise<Partner | undefined> {
+    const existing = await this.getPartnerById(id);
+    if (!existing) return undefined;
+    
+    await db.update(partnersTable)
+      .set({ ...updates, updatedAt: new Date().toISOString() })
+      .where(eq(partnersTable.id, id));
+    
+    return this.getPartnerById(id);
+  }
+
+  async incrementPartnerStats(partnerId: string, blocked: boolean): Promise<void> {
+    const partner = await this.getPartnerById(partnerId);
+    if (partner) {
+      await db.update(partnersTable)
+        .set({
+          totalRequests: partner.totalRequests + 1,
+          blockedRequests: blocked ? partner.blockedRequests + 1 : partner.blockedRequests,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(partnersTable.id, partnerId));
+    }
+  }
+
+  async getLogsByPartner(partnerId: string): Promise<EventLog[]> {
+    const rows = await db.select().from(eventLogsTable)
+      .where(eq(eventLogsTable.partnerId, partnerId))
+      .orderBy(desc(eventLogsTable.timestamp));
+    return rows.map(row => ({
+      id: row.id,
+      timestamp: row.timestamp,
+      userId: row.userId,
+      username: row.username,
+      device: row.device,
+      deviceType: row.deviceType,
+      geo: row.geo,
+      region: row.region,
+      ip: row.ip,
+      riskScore: row.riskScore,
+      riskLevel: row.riskLevel as any,
+      decision: row.decision as any,
+      breakdown: row.breakdown as any,
+      reason: row.reason,
+      latency: row.latency,
+    }));
+  }
+
+  async getLoginAttemptsByPartner(partnerId: string): Promise<LoginAttempt[]> {
+    const rows = await db.select().from(loginAttemptsTable)
+      .where(eq(loginAttemptsTable.partnerId, partnerId))
+      .orderBy(desc(loginAttemptsTable.timestamp));
+    return rows.map(row => ({
+      id: row.id,
+      timestamp: row.timestamp,
+      userId: row.userId ?? undefined,
+      username: row.username,
+      ip: row.ip,
+      device: row.device,
+      deviceType: row.deviceType,
+      geo: row.geo,
+      region: row.region,
+      fingerprint: row.fingerprint as any,
+      riskScore: row.riskScore,
+      riskLevel: row.riskLevel as any,
+      decision: row.decision as any,
+      breakdown: row.breakdown as any,
+      enhancedFactors: row.enhancedFactors as any,
+      reason: row.reason,
+      success: row.success,
+      requiresOtp: row.requiresOtp,
+      loginSource: row.loginSource as "main" | "side",
+      hiddenReason: row.hiddenReason,
+    }));
   }
 }
 

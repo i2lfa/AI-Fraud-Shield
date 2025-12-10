@@ -96,48 +96,21 @@ export const otpSessionsTable = pgTable("otp_sessions", {
   attempts: integer("attempts").notNull().default(0),
 });
 
-// Partner Authentication System Tables
+// Partner Fraud API System Tables
 export const partnersTable = pgTable("partners", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   clientId: text("client_id").notNull().unique(),
   clientSecretHash: text("client_secret_hash").notNull(),
-  redirectUris: jsonb("redirect_uris").notNull().default([]),
   webhookUrl: text("webhook_url"),
   webhookSecret: text("webhook_secret"),
   logoUrl: text("logo_url"),
   isActive: boolean("is_active").notNull().default(true),
   rateLimitPerMinute: integer("rate_limit_per_minute").notNull().default(100),
+  totalRequests: integer("total_requests").notNull().default(0),
+  blockedRequests: integer("blocked_requests").notNull().default(0),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
-});
-
-export const partnerAuthCodesTable = pgTable("partner_auth_codes", {
-  id: text("id").primaryKey(),
-  partnerId: text("partner_id").notNull(),
-  code: text("code").notNull().unique(),
-  userId: text("user_id").notNull(),
-  username: text("username").notNull(),
-  redirectUri: text("redirect_uri").notNull(),
-  state: text("state"),
-  riskScore: integer("risk_score").notNull(),
-  riskLevel: text("risk_level").notNull(),
-  decision: text("decision").notNull(),
-  expiresAt: text("expires_at").notNull(),
-  used: boolean("used").notNull().default(false),
-  createdAt: text("created_at").notNull(),
-});
-
-export const partnerTokensTable = pgTable("partner_tokens", {
-  id: text("id").primaryKey(),
-  partnerId: text("partner_id").notNull(),
-  userId: text("user_id").notNull(),
-  username: text("username").notNull(),
-  tokenHash: text("token_hash").notNull(),
-  riskSnapshot: jsonb("risk_snapshot").notNull(),
-  expiresAt: text("expires_at").notNull(),
-  revoked: boolean("revoked").notNull().default(false),
-  createdAt: text("created_at").notNull(),
 });
 
 export type AuthUserRow = typeof authUsersTable.$inferSelect;
@@ -146,6 +119,7 @@ export type EventLogRow = typeof eventLogsTable.$inferSelect;
 export type SecurityRulesRow = typeof securityRulesTable.$inferSelect;
 export type LoginAttemptRow = typeof loginAttemptsTable.$inferSelect;
 export type OtpSessionRow = typeof otpSessionsTable.$inferSelect;
+export type PartnerRow = typeof partnersTable.$inferSelect;
 
 export type RiskLevel = "critical" | "high" | "medium" | "low" | "safe";
 export type Decision = "block" | "challenge" | "alert" | "allow";
@@ -396,3 +370,64 @@ export function getDecision(score: number, rules: SecurityRules): Decision {
   if (rules.enableAlerts && score >= rules.alertThreshold) return "alert";
   return "allow";
 }
+
+// Partner API Schemas
+export const partnerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  clientId: z.string(),
+  clientSecretHash: z.string(),
+  webhookUrl: z.string().optional(),
+  webhookSecret: z.string().optional(),
+  logoUrl: z.string().optional(),
+  isActive: z.boolean(),
+  rateLimitPerMinute: z.number(),
+  totalRequests: z.number(),
+  blockedRequests: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type Partner = z.infer<typeof partnerSchema>;
+
+export const partnerAnalyzeRequestSchema = z.object({
+  sessionId: z.string().optional(),
+  userIdentifier: z.string(),
+  fingerprint: deviceFingerprintSchema.optional(),
+  typingMetrics: z.object({
+    avgKeyDownTime: z.number(),
+    avgKeyUpTime: z.number(),
+    typingSpeed: z.number(),
+  }).optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+export type PartnerAnalyzeRequest = z.infer<typeof partnerAnalyzeRequestSchema>;
+
+export const partnerAnalyzeResponseSchema = z.object({
+  sessionId: z.string(),
+  riskScore: z.number(),
+  riskLevel: z.enum(["critical", "high", "medium", "low", "safe"]),
+  decision: z.enum(["block", "challenge", "alert", "allow"]),
+  confidence: z.number(),
+  factors: z.object({
+    deviceRisk: z.number(),
+    behaviorRisk: z.number(),
+    geoRisk: z.number(),
+    velocityRisk: z.number(),
+  }),
+  recommendation: z.string(),
+  timestamp: z.string(),
+});
+
+export type PartnerAnalyzeResponse = z.infer<typeof partnerAnalyzeResponseSchema>;
+
+export const partnerRegisterRequestSchema = z.object({
+  name: z.string().min(1),
+  webhookUrl: z.string().url().optional(),
+  logoUrl: z.string().url().optional(),
+});
+
+export type PartnerRegisterRequest = z.infer<typeof partnerRegisterRequestSchema>;

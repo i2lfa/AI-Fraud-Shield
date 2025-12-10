@@ -4,17 +4,21 @@ import { randomUUID } from "crypto";
 import { storage } from "./storage";
 import { fraudModel, extractTrainingFeatures } from "./ml-model";
 import { fanOutLoginAttempt, maskIpAddress } from "./monitoring-hub";
+import { createHash } from "crypto";
 import { 
   getRiskLevel, 
   getDecision,
   simulationRequestSchema,
   securityRulesSchema,
   loginRequestSchema,
+  partnerAnalyzeRequestSchema,
+  partnerRegisterRequestSchema,
   type RiskBreakdown,
   type RiskCalculationResponse,
   type LoginAttempt,
   type EnhancedRiskFactors,
   type EventLog,
+  type PartnerAnalyzeResponse,
 } from "@shared/schema";
 
 // Helper to convert LoginAttempt to EventLog for dashboard tracking
@@ -1237,6 +1241,453 @@ export async function registerRoutes(
       res.json(response);
     } catch (error) {
       res.status(500).json({ error: "Failed to simulate risk" });
+    }
+  });
+
+  // ===========================================
+  // PARTNER API ENDPOINTS
+  // External fraud detection service for partner companies
+  // ===========================================
+
+  // Helper function to hash secrets
+  function hashSecret(secret: string): string {
+    return createHash('sha256').update(secret).digest('hex');
+  }
+
+  // Helper function to generate API credentials
+  function generateCredentials(): { clientId: string; clientSecret: string } {
+    const clientId = `pk_${randomUUID().replace(/-/g, '').substring(0, 24)}`;
+    const clientSecret = `sk_${randomUUID().replace(/-/g, '')}${randomUUID().replace(/-/g, '')}`.substring(0, 48);
+    return { clientId, clientSecret };
+  }
+
+  // Middleware to authenticate partner API requests
+  async function authenticatePartner(req: Request, res: Response): Promise<{ partnerId: string } | null> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      res.status(401).json({ error: "Missing or invalid authorization header", code: "UNAUTHORIZED" });
+      return null;
+    }
+
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+    const [clientId, clientSecret] = credentials.split(':');
+
+    if (!clientId || !clientSecret) {
+      res.status(401).json({ error: "Invalid credentials format", code: "INVALID_CREDENTIALS" });
+      return null;
+    }
+
+    const partner = await storage.getPartnerByClientId(clientId);
+    if (!partner) {
+      res.status(401).json({ error: "Invalid client ID", code: "INVALID_CLIENT" });
+      return null;
+    }
+
+    const secretHash = hashSecret(clientSecret);
+    if (secretHash !== partner.clientSecretHash) {
+      res.status(401).json({ error: "Invalid client secret", code: "INVALID_SECRET" });
+      return null;
+    }
+
+    if (!partner.isActive) {
+      res.status(403).json({ error: "Partner account is deactivated", code: "PARTNER_DEACTIVATED" });
+      return null;
+    }
+
+    return { partnerId: partner.id };
+  }
+
+  // Partner API: Analyze login behavior
+  app.post("/partner/api/analyze", async (req, res) => {
+    const startTime = Date.now();
+    
+    try {
+      // Authenticate partner
+      const auth = await authenticatePartner(req, res);
+      if (!auth) return;
+
+      // Validate request body
+      const parseResult = partnerAnalyzeRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request body", 
+          code: "VALIDATION_ERROR",
+          details: parseResult.error.flatten() 
+        });
+      }
+
+      const { userIdentifier, fingerprint, typingMetrics, ipAddress, userAgent, metadata } = parseResult.data;
+      const sessionId = parseResult.data.sessionId || `sess_${randomUUID()}`;
+      
+      const clientIp = ipAddress || req.ip || req.socket.remoteAddress || "0.0.0.0";
+      const ua = userAgent || req.headers["user-agent"] || "Unknown";
+      
+      // Detect device from user agent
+      const device = ua.includes("Chrome") ? "Chrome" : 
+                     ua.includes("Firefox") ? "Firefox" : 
+                     ua.includes("Safari") ? "Safari" : "Unknown";
+      const deviceType = ua.includes("Mobile") ? "mobile" : "desktop";
+      
+      // Geo detection from fingerprint timezone
+      const tzLower = (fingerprint?.timezone || "").toLowerCase();
+      let geo = "Unknown";
+      let region = "unknown";
+      if (tzLower.includes("asia")) { geo = "Asia"; region = "asia-east"; }
+      else if (tzLower.includes("europe") || tzLower.includes("london") || tzLower.includes("paris")) { geo = "EU Central"; region = "eu-central"; }
+      else if (tzLower.includes("america") || tzLower.includes("new_york")) { geo = "US East"; region = "us-east"; }
+      else if (tzLower.includes("los_angeles") || tzLower.includes("pacific")) { geo = "US West"; region = "us-west"; }
+
+      // Calculate risk breakdown
+      const breakdown = calculateRiskBreakdown(
+        { 
+          device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+          deviceType,
+          geo,
+          region,
+          typingSpeed: typingMetrics?.typingSpeed || 45,
+          loginAttempts: 1,
+          loginTime: new Date().getHours(),
+        },
+        undefined // No baseline for partner users
+      );
+
+      // Calculate enhanced risk factors
+      const enhancedFactors = calculateEnhancedRiskFactors(
+        clientIp,
+        undefined,
+        undefined,
+        undefined,
+        geo,
+        typingMetrics,
+        fingerprint
+      );
+
+      // Get AI model prediction
+      const trainingFeatures = extractTrainingFeatures(
+        typingMetrics || { typingSpeed: 45 },
+        fingerprint,
+        null,
+        geo,
+        null,
+        1,
+        true
+      );
+      
+      const aiPrediction = fraudModel.predict(trainingFeatures);
+
+      // Calculate combined risk score
+      const baseScore = breakdown.deviceDrift + breakdown.geoDrift + breakdown.typingDrift + 
+                       breakdown.timingAnomaly + breakdown.attemptsMultiplier;
+      const enhancedScore = enhancedFactors.ipReputation + enhancedFactors.impossibleTravel + 
+                           enhancedFactors.velocityScore + enhancedFactors.browserPatternScore + 
+                           enhancedFactors.botLikelihoodScore + enhancedFactors.behavioralScore;
+      const aiScore = aiPrediction.score * 0.3;
+      const riskScore = Math.min(100, baseScore + Math.floor(enhancedScore / 2) + Math.floor(aiScore));
+      
+      const rules = await storage.getRules();
+      const riskLevel = getRiskLevel(riskScore);
+      const decision = getDecision(riskScore, rules);
+      
+      // Calculate confidence based on data quality
+      const dataPoints = [
+        fingerprint?.userAgent ? 1 : 0,
+        fingerprint?.screenResolution ? 1 : 0,
+        fingerprint?.timezone ? 1 : 0,
+        typingMetrics?.typingSpeed ? 1 : 0,
+        ipAddress ? 1 : 0,
+      ];
+      const confidence = Math.round((dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length) * 100);
+
+      // Generate recommendation
+      let recommendation = "Allow the login to proceed.";
+      if (decision === "block") {
+        recommendation = "Block this login attempt. High fraud indicators detected.";
+      } else if (decision === "challenge") {
+        recommendation = "Challenge the user with additional verification (e.g., 2FA, captcha).";
+      } else if (decision === "alert") {
+        recommendation = "Allow but monitor this session for suspicious activity.";
+      }
+
+      // Log the attempt
+      const loginAttempt: LoginAttempt = {
+        id: sessionId,
+        timestamp: new Date().toISOString(),
+        userId: undefined,
+        username: userIdentifier,
+        ip: clientIp,
+        device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+        deviceType,
+        geo,
+        region,
+        fingerprint,
+        riskScore,
+        riskLevel,
+        decision,
+        breakdown,
+        enhancedFactors: {
+          ...enhancedFactors,
+          aiModelAnomalyScore: aiPrediction.score,
+        },
+        reason: `Partner API analysis for ${userIdentifier}`,
+        success: decision === "allow" || decision === "alert",
+        requiresOtp: decision === "challenge",
+        loginSource: "main",
+        hiddenReason: `Partner: ${auth.partnerId} | AI Score: ${aiPrediction.score}`,
+        partnerId: auth.partnerId,
+      } as LoginAttempt & { partnerId: string };
+
+      await storage.addLoginAttempt(loginAttempt);
+      await storage.incrementPartnerStats(auth.partnerId, decision === "block");
+
+      // Train the model
+      fraudModel.addSample(trainingFeatures, decision === "block" || decision === "challenge");
+
+      const latency = Date.now() - startTime;
+
+      // Return response
+      const response: PartnerAnalyzeResponse = {
+        sessionId,
+        riskScore,
+        riskLevel,
+        decision,
+        confidence,
+        factors: {
+          deviceRisk: breakdown.deviceDrift,
+          behaviorRisk: breakdown.typingDrift + enhancedFactors.behavioralScore,
+          geoRisk: breakdown.geoDrift + enhancedFactors.impossibleTravel,
+          velocityRisk: enhancedFactors.velocityScore,
+        },
+        recommendation,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error("Partner API error:", error);
+      res.status(500).json({ error: "Analysis failed", code: "INTERNAL_ERROR" });
+    }
+  });
+
+  // Partner API: Verify credentials
+  app.get("/partner/api/verify", async (req, res) => {
+    try {
+      const auth = await authenticatePartner(req, res);
+      if (!auth) return;
+
+      const partner = await storage.getPartnerById(auth.partnerId);
+      if (!partner) {
+        return res.status(404).json({ error: "Partner not found", code: "NOT_FOUND" });
+      }
+
+      res.json({
+        valid: true,
+        partnerId: partner.id,
+        name: partner.name,
+        isActive: partner.isActive,
+        rateLimitPerMinute: partner.rateLimitPerMinute,
+        totalRequests: partner.totalRequests,
+        blockedRequests: partner.blockedRequests,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Verification failed", code: "INTERNAL_ERROR" });
+    }
+  });
+
+  // Partner API: Get partner stats
+  app.get("/partner/api/stats", async (req, res) => {
+    try {
+      const auth = await authenticatePartner(req, res);
+      if (!auth) return;
+
+      const attempts = await storage.getLoginAttemptsByPartner(auth.partnerId);
+      const partner = await storage.getPartnerById(auth.partnerId);
+
+      const stats = {
+        totalRequests: partner?.totalRequests || 0,
+        blockedRequests: partner?.blockedRequests || 0,
+        allowedRequests: (partner?.totalRequests || 0) - (partner?.blockedRequests || 0),
+        blockRate: partner?.totalRequests ? 
+          Math.round((partner.blockedRequests / partner.totalRequests) * 100) : 0,
+        recentAttempts: attempts.slice(0, 20).map(a => ({
+          sessionId: a.id,
+          userIdentifier: a.username,
+          riskScore: a.riskScore,
+          decision: a.decision,
+          timestamp: a.timestamp,
+        })),
+      };
+
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get stats", code: "INTERNAL_ERROR" });
+    }
+  });
+
+  // ===========================================
+  // ADMIN: Partner Management Endpoints
+  // ===========================================
+
+  // Admin: Register new partner
+  app.post("/api/admin/partners", async (req: RequestWithSession, res) => {
+    try {
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const parseResult = partnerRegisterRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ error: "Invalid request", details: parseResult.error.flatten() });
+      }
+
+      const { name, webhookUrl, logoUrl } = parseResult.data;
+      const { clientId, clientSecret } = generateCredentials();
+      const clientSecretHash = hashSecret(clientSecret);
+
+      const partner = await storage.createPartner({
+        name,
+        clientId,
+        clientSecretHash,
+        webhookUrl,
+        logoUrl,
+        isActive: true,
+        rateLimitPerMinute: 100,
+      });
+
+      // Return credentials only once - they won't be retrievable again
+      res.json({
+        success: true,
+        partner: {
+          id: partner.id,
+          name: partner.name,
+          clientId: partner.clientId,
+          createdAt: partner.createdAt,
+        },
+        credentials: {
+          clientId,
+          clientSecret, // Only returned on creation!
+          warning: "Store the client secret securely. It cannot be retrieved again.",
+        },
+      });
+    } catch (error) {
+      console.error("Failed to create partner:", error);
+      res.status(500).json({ error: "Failed to create partner" });
+    }
+  });
+
+  // Admin: List all partners
+  app.get("/api/admin/partners", async (req: RequestWithSession, res) => {
+    try {
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partners = await storage.getAllPartners();
+      
+      res.json(partners.map(p => ({
+        id: p.id,
+        name: p.name,
+        clientId: p.clientId,
+        isActive: p.isActive,
+        rateLimitPerMinute: p.rateLimitPerMinute,
+        totalRequests: p.totalRequests,
+        blockedRequests: p.blockedRequests,
+        webhookUrl: p.webhookUrl,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      })));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to list partners" });
+    }
+  });
+
+  // Admin: Get partner details
+  app.get("/api/admin/partners/:id", async (req: RequestWithSession, res) => {
+    try {
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partner = await storage.getPartnerById(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ error: "Partner not found" });
+      }
+
+      const attempts = await storage.getLoginAttemptsByPartner(partner.id);
+
+      res.json({
+        ...partner,
+        clientSecretHash: undefined, // Never expose
+        recentAttempts: attempts.slice(0, 50),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get partner" });
+    }
+  });
+
+  // Admin: Update partner
+  app.patch("/api/admin/partners/:id", async (req: RequestWithSession, res) => {
+    try {
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { name, webhookUrl, logoUrl, isActive, rateLimitPerMinute } = req.body;
+      
+      const updated = await storage.updatePartner(req.params.id, {
+        name,
+        webhookUrl,
+        logoUrl,
+        isActive,
+        rateLimitPerMinute,
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Partner not found" });
+      }
+
+      res.json({
+        id: updated.id,
+        name: updated.name,
+        isActive: updated.isActive,
+        rateLimitPerMinute: updated.rateLimitPerMinute,
+        updatedAt: updated.updatedAt,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update partner" });
+    }
+  });
+
+  // Admin: Rotate partner secret
+  app.post("/api/admin/partners/:id/rotate-secret", async (req: RequestWithSession, res) => {
+    try {
+      if (req.session.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const partner = await storage.getPartnerById(req.params.id);
+      if (!partner) {
+        return res.status(404).json({ error: "Partner not found" });
+      }
+
+      const { clientId, clientSecret } = generateCredentials();
+      const clientSecretHash = hashSecret(clientSecret);
+
+      await storage.updatePartner(req.params.id, {
+        clientId,
+        clientSecretHash,
+      });
+
+      res.json({
+        success: true,
+        credentials: {
+          clientId,
+          clientSecret,
+          warning: "Store the new client secret securely. The old credentials are now invalid.",
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to rotate secret" });
     }
   });
 

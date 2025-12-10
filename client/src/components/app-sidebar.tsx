@@ -11,6 +11,7 @@ import {
   Lock,
   Home,
   Brain,
+  Building2,
 } from "lucide-react";
 import logoImage from "@assets/generated_images/large_ai_shield_dark_background.png";
 import {
@@ -59,6 +60,11 @@ const adminOnlyItems = [
     title: "AI Model Playground",
     url: "/model-playground",
     icon: Brain,
+  },
+  {
+    title: "Partner Portal",
+    url: "/partners",
+    icon: Building2,
   },
   {
     title: "Security Rules",

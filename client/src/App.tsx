@@ -21,6 +21,7 @@ import RealHome from "@/pages/real-home";
 import UserDashboard from "@/pages/user-dashboard";
 import AdminPanel from "@/pages/admin-panel";
 import ModelPlayground from "@/pages/model-playground";
+import PartnerPortal from "@/pages/partner-portal";
 
 function PublicRoutes() {
   return (
@@ -46,6 +47,7 @@ function ProtectedRoutes() {
       <Route path="/real-home" component={RealHome} />
       <Route path="/admin" component={AdminPanel} />
       <Route path="/model-playground" component={ModelPlayground} />
+      <Route path="/partners" component={PartnerPortal} />
       <Route component={NotFound} />
     </Switch>
   );
