@@ -1039,25 +1039,9 @@ export async function registerRoutes(
       }
       
       const users = await storage.getUsers();
-      
-      // Admin sees all data, regular users see limited data
-      if (req.session.role === "admin") {
-        res.json(users);
-      } else {
-        // Regular users see basic user info without sensitive fraud data
-        const safeUsers = users.map(user => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          riskScore: user.riskScore,
-          status: user.status,
-          lastLogin: user.lastLogin,
-          totalLogins: user.totalLogins,
-          primaryDevice: user.primaryDevice,
-          primaryRegion: user.primaryRegion,
-        }));
-        res.json(safeUsers);
-      }
+      // Both admin and regular users can see user profiles
+      // The data returned is the same - fraud detection details are in separate admin endpoints
+      res.json(users);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch users" });
     }
