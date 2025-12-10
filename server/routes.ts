@@ -974,16 +974,40 @@ export async function registerRoutes(
       if (req.session.role === "admin") {
         res.json(stats);
       } else {
-        // Filter for user's own data only
+        // Get ALL user's logs for accurate stats (not just from recentEvents)
         const userId = req.session.userId;
-        const userLogs = stats.recentEvents.filter((log: any) => log.userId === userId);
+        const allLogs = await storage.getLogs();
+        const userLogs = allLogs.filter((log: any) => log.userId === userId);
         const userRiskyEntry = stats.topRiskyUsers.find((u: any) => u.id === userId);
         
-        // Calculate user-specific stats
+        // Calculate user-specific stats from ALL their logs
         const userHighRisk = userLogs.filter((l: any) => l.riskLevel === "high" || l.riskLevel === "critical").length;
+        const userCritical = userLogs.filter((l: any) => l.riskLevel === "critical").length;
         const userMedium = userLogs.filter((l: any) => l.riskLevel === "medium").length;
         const userLow = userLogs.filter((l: any) => l.riskLevel === "low").length;
         const userSafe = userLogs.filter((l: any) => l.riskLevel === "safe").length;
+        
+        // Calculate user-specific geo stats
+        const userGeoStats = userLogs.reduce((acc: any[], log: any) => {
+          const existing = acc.find(g => g.region === log.region);
+          if (existing) {
+            existing.count++;
+          } else {
+            acc.push({ region: log.region, count: 1, lat: 0, lng: 0 });
+          }
+          return acc;
+        }, []);
+        
+        // Calculate user-specific device stats
+        const userDeviceStats = userLogs.reduce((acc: any[], log: any) => {
+          const existing = acc.find(d => d.type === log.deviceType);
+          if (existing) {
+            existing.count++;
+          } else {
+            acc.push({ type: log.deviceType, count: 1 });
+          }
+          return acc;
+        }, []);
         
         res.json({
           totalEvents: userLogs.length,
@@ -991,14 +1015,14 @@ export async function registerRoutes(
           blockedCount: userLogs.filter((l: any) => l.decision === "block").length,
           avgResponseTime: stats.avgResponseTime,
           riskDistribution: {
-            critical: userLogs.filter((l: any) => l.riskLevel === "critical").length,
-            high: userHighRisk,
+            critical: userCritical,
+            high: userHighRisk - userCritical,
             medium: userMedium,
             low: userLow,
             safe: userSafe,
           },
-          deviceStats: stats.deviceStats,
-          geoStats: stats.geoStats,
+          deviceStats: userDeviceStats,
+          geoStats: userGeoStats,
           topRiskyUsers: userRiskyEntry ? [userRiskyEntry] : [],
           recentEvents: userLogs.slice(0, 20),
           hourlyTrend: stats.hourlyTrend,
