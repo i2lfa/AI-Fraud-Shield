@@ -49,6 +49,7 @@ export const eventLogsTable = pgTable("event_logs", {
   breakdown: jsonb("breakdown").notNull(),
   reason: text("reason").notNull(),
   latency: integer("latency").notNull(),
+  partnerId: text("partner_id"),
 });
 
 export const securityRulesTable = pgTable("security_rules", {
@@ -83,6 +84,7 @@ export const loginAttemptsTable = pgTable("login_attempts", {
   requiresOtp: boolean("requires_otp").notNull(),
   loginSource: text("login_source").notNull(),
   hiddenReason: text("hidden_reason").notNull(),
+  partnerId: text("partner_id"),
 });
 
 export const otpSessionsTable = pgTable("otp_sessions", {
@@ -92,6 +94,50 @@ export const otpSessionsTable = pgTable("otp_sessions", {
   expiresAt: text("expires_at").notNull(),
   verified: boolean("verified").notNull().default(false),
   attempts: integer("attempts").notNull().default(0),
+});
+
+// Partner Authentication System Tables
+export const partnersTable = pgTable("partners", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  clientId: text("client_id").notNull().unique(),
+  clientSecretHash: text("client_secret_hash").notNull(),
+  redirectUris: jsonb("redirect_uris").notNull().default([]),
+  webhookUrl: text("webhook_url"),
+  webhookSecret: text("webhook_secret"),
+  logoUrl: text("logo_url"),
+  isActive: boolean("is_active").notNull().default(true),
+  rateLimitPerMinute: integer("rate_limit_per_minute").notNull().default(100),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const partnerAuthCodesTable = pgTable("partner_auth_codes", {
+  id: text("id").primaryKey(),
+  partnerId: text("partner_id").notNull(),
+  code: text("code").notNull().unique(),
+  userId: text("user_id").notNull(),
+  username: text("username").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  state: text("state"),
+  riskScore: integer("risk_score").notNull(),
+  riskLevel: text("risk_level").notNull(),
+  decision: text("decision").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: text("created_at").notNull(),
+});
+
+export const partnerTokensTable = pgTable("partner_tokens", {
+  id: text("id").primaryKey(),
+  partnerId: text("partner_id").notNull(),
+  userId: text("user_id").notNull(),
+  username: text("username").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  riskSnapshot: jsonb("risk_snapshot").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  revoked: boolean("revoked").notNull().default(false),
+  createdAt: text("created_at").notNull(),
 });
 
 export type AuthUserRow = typeof authUsersTable.$inferSelect;
