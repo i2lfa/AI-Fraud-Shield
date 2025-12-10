@@ -1033,12 +1033,31 @@ export async function registerRoutes(
 
   app.get("/api/users", async (req, res) => {
     try {
-      // Only admins can access user list with baseline data
-      if (req.session.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+      // Check if user is logged in
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
       }
+      
       const users = await storage.getUsers();
-      res.json(users);
+      
+      // Admin sees all data, regular users see limited data
+      if (req.session.role === "admin") {
+        res.json(users);
+      } else {
+        // Regular users see basic user info without sensitive fraud data
+        const safeUsers = users.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          riskScore: user.riskScore,
+          status: user.status,
+          lastLogin: user.lastLogin,
+          totalLogins: user.totalLogins,
+          primaryDevice: user.primaryDevice,
+          primaryRegion: user.primaryRegion,
+        }));
+        res.json(safeUsers);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch users" });
     }
