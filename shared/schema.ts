@@ -113,6 +113,21 @@ export const partnersTable = pgTable("partners", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// SmartGate Demo Users Table
+export const smartgateUsersTable = pgTable("smartgate_users", {
+  id: text("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  fullName: text("full_name").notNull(),
+  email: text("email"),
+  primaryDevice: text("primary_device").notNull().default("Unknown"),
+  primaryRegion: text("primary_region").notNull().default("Middle East"),
+  avgTypingSpeed: integer("avg_typing_speed").notNull().default(45),
+  lastLoginIp: text("last_login_ip"),
+  lastLoginTime: text("last_login_time"),
+  createdAt: text("created_at").notNull(),
+});
+
 export type AuthUserRow = typeof authUsersTable.$inferSelect;
 export type UserBaselineRow = typeof userBaselinesTable.$inferSelect;
 export type EventLogRow = typeof eventLogsTable.$inferSelect;
@@ -120,6 +135,7 @@ export type SecurityRulesRow = typeof securityRulesTable.$inferSelect;
 export type LoginAttemptRow = typeof loginAttemptsTable.$inferSelect;
 export type OtpSessionRow = typeof otpSessionsTable.$inferSelect;
 export type PartnerRow = typeof partnersTable.$inferSelect;
+export type SmartgateUserRow = typeof smartgateUsersTable.$inferSelect;
 
 export type RiskLevel = "critical" | "high" | "medium" | "low" | "safe";
 export type Decision = "block" | "challenge" | "alert" | "allow";
@@ -431,3 +447,20 @@ export const partnerRegisterRequestSchema = z.object({
 });
 
 export type PartnerRegisterRequest = z.infer<typeof partnerRegisterRequestSchema>;
+
+// SmartGate Demo User Schema
+export const smartgateUserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  password: z.string(),
+  fullName: z.string(),
+  email: z.string().optional(),
+  primaryDevice: z.string(),
+  primaryRegion: z.string(),
+  avgTypingSpeed: z.number(),
+  lastLoginIp: z.string().optional(),
+  lastLoginTime: z.string().optional(),
+  createdAt: z.string(),
+});
+
+export type SmartgateUser = z.infer<typeof smartgateUserSchema>;

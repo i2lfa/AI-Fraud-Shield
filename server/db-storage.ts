@@ -9,6 +9,7 @@ import {
   loginAttemptsTable, 
   otpSessionsTable,
   partnersTable,
+  smartgateUsersTable,
 } from "@shared/schema";
 import type { 
   UserBaseline, 
@@ -19,6 +20,7 @@ import type {
   LoginAttempt,
   OtpSession,
   Partner,
+  SmartgateUser,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -629,6 +631,98 @@ export class DbStorage implements IStorage {
       requiresOtp: row.requiresOtp,
       loginSource: row.loginSource as "main" | "side",
       hiddenReason: row.hiddenReason,
+    }));
+  }
+
+  // SmartGate Demo Methods
+  async getSmartgateUser(username: string): Promise<SmartgateUser | undefined> {
+    const rows = await db.select().from(smartgateUsersTable).where(eq(smartgateUsersTable.username, username));
+    if (rows.length === 0) return undefined;
+    const row = rows[0];
+    return {
+      id: row.id,
+      username: row.username,
+      password: row.password,
+      fullName: row.fullName,
+      email: row.email ?? undefined,
+      primaryDevice: row.primaryDevice,
+      primaryRegion: row.primaryRegion,
+      avgTypingSpeed: row.avgTypingSpeed,
+      lastLoginIp: row.lastLoginIp ?? undefined,
+      lastLoginTime: row.lastLoginTime ?? undefined,
+      createdAt: row.createdAt,
+    };
+  }
+
+  async getSmartgateUserById(id: string): Promise<SmartgateUser | undefined> {
+    const rows = await db.select().from(smartgateUsersTable).where(eq(smartgateUsersTable.id, id));
+    if (rows.length === 0) return undefined;
+    const row = rows[0];
+    return {
+      id: row.id,
+      username: row.username,
+      password: row.password,
+      fullName: row.fullName,
+      email: row.email ?? undefined,
+      primaryDevice: row.primaryDevice,
+      primaryRegion: row.primaryRegion,
+      avgTypingSpeed: row.avgTypingSpeed,
+      lastLoginIp: row.lastLoginIp ?? undefined,
+      lastLoginTime: row.lastLoginTime ?? undefined,
+      createdAt: row.createdAt,
+    };
+  }
+
+  async createSmartgateUser(user: Omit<SmartgateUser, 'id' | 'createdAt'>): Promise<SmartgateUser> {
+    const id = `sg_${randomUUID()}`;
+    const createdAt = new Date().toISOString();
+    await db.insert(smartgateUsersTable).values({
+      id,
+      username: user.username,
+      password: user.password,
+      fullName: user.fullName,
+      email: user.email,
+      primaryDevice: user.primaryDevice,
+      primaryRegion: user.primaryRegion,
+      avgTypingSpeed: user.avgTypingSpeed,
+      lastLoginIp: user.lastLoginIp,
+      lastLoginTime: user.lastLoginTime,
+      createdAt,
+    });
+    return { ...user, id, createdAt };
+  }
+
+  async updateSmartgateUser(id: string, updates: Partial<SmartgateUser>): Promise<SmartgateUser | undefined> {
+    const existing = await this.getSmartgateUserById(id);
+    if (!existing) return undefined;
+    
+    const updateData: any = {};
+    if (updates.lastLoginIp !== undefined) updateData.lastLoginIp = updates.lastLoginIp;
+    if (updates.lastLoginTime !== undefined) updateData.lastLoginTime = updates.lastLoginTime;
+    if (updates.primaryDevice !== undefined) updateData.primaryDevice = updates.primaryDevice;
+    if (updates.avgTypingSpeed !== undefined) updateData.avgTypingSpeed = updates.avgTypingSpeed;
+    
+    if (Object.keys(updateData).length > 0) {
+      await db.update(smartgateUsersTable).set(updateData).where(eq(smartgateUsersTable.id, id));
+    }
+    
+    return { ...existing, ...updates };
+  }
+
+  async getAllSmartgateUsers(): Promise<SmartgateUser[]> {
+    const rows = await db.select().from(smartgateUsersTable);
+    return rows.map(row => ({
+      id: row.id,
+      username: row.username,
+      password: row.password,
+      fullName: row.fullName,
+      email: row.email ?? undefined,
+      primaryDevice: row.primaryDevice,
+      primaryRegion: row.primaryRegion,
+      avgTypingSpeed: row.avgTypingSpeed,
+      lastLoginIp: row.lastLoginIp ?? undefined,
+      lastLoginTime: row.lastLoginTime ?? undefined,
+      createdAt: row.createdAt,
     }));
   }
 }

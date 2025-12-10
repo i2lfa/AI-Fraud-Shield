@@ -1697,10 +1697,14 @@ export async function registerRoutes(
   // ===========================================
   app.post("/api/demo/smartgate/analyze", async (req, res) => {
     try {
-      const { userIdentifier, fingerprint, typingMetrics } = req.body;
+      const { userIdentifier, password, fingerprint, typingMetrics } = req.body;
       
       const clientIp = req.ip || req.socket.remoteAddress || "0.0.0.0";
       const ua = fingerprint?.userAgent || req.headers["user-agent"] || "Unknown";
+      
+      // Authenticate SmartGate user
+      const sgUser = await storage.getSmartgateUser(userIdentifier);
+      const isValidUser = sgUser && sgUser.password === password;
       
       const device = ua.includes("Chrome") ? "Chrome" : 
                      ua.includes("Firefox") ? "Firefox" : 
@@ -1778,12 +1782,52 @@ export async function registerRoutes(
       }
 
       const sessionId = `demo_${randomUUID()}`;
+      const timestamp = new Date().toISOString();
+
+      // Save login attempt to database for ML training
+      const loginAttempt: LoginAttempt = {
+        id: sessionId,
+        timestamp,
+        userId: sgUser?.id,
+        username: userIdentifier || "unknown",
+        ip: clientIp,
+        device: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+        deviceType,
+        geo,
+        region,
+        fingerprint: fingerprint || null,
+        riskScore,
+        riskLevel,
+        decision,
+        breakdown,
+        enhancedFactors,
+        reason: `SmartGate Demo login - ${isValidUser ? 'valid credentials' : 'invalid credentials'}`,
+        success: isValidUser && (decision === "allow" || decision === "alert"),
+        requiresOtp: decision === "challenge",
+        loginSource: "side" as const,
+        hiddenReason: `SmartGate Demo | ML Score: ${aiPrediction.score.toFixed(2)} | Valid: ${isValidUser}`,
+      };
+
+      await storage.addLoginAttempt(loginAttempt);
+
+      // Add to ML training data
+      fraudModel.addSample(trainingFeatures, decision === "block" || decision === "challenge");
+
+      // Update user's last login info
+      if (sgUser && isValidUser) {
+        await storage.updateSmartgateUser(sgUser.id, {
+          lastLoginIp: clientIp,
+          lastLoginTime: timestamp,
+          primaryDevice: `${deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - ${device}`,
+          avgTypingSpeed: typingMetrics?.typingSpeed || sgUser.avgTypingSpeed,
+        });
+      }
 
       res.json({
         sessionId,
         riskScore,
         riskLevel,
-        decision,
+        decision: !isValidUser ? "block" : decision,
         confidence,
         factors: {
           deviceRisk: breakdown.deviceDrift,
@@ -1791,8 +1835,9 @@ export async function registerRoutes(
           geoRisk: breakdown.geoDrift + Math.floor(enhancedFactors.impossibleTravel),
           velocityRisk: Math.floor(enhancedFactors.velocityScore),
         },
-        recommendation,
-        timestamp: new Date().toISOString(),
+        recommendation: !isValidUser ? "بيانات الدخول غير صحيحة" : recommendation,
+        timestamp,
+        user: isValidUser ? { fullName: sgUser?.fullName } : undefined,
       });
     } catch (error) {
       console.error("Demo API error:", error);

@@ -146,6 +146,7 @@ export default function SmartGateLogin() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userIdentifier: nationalId,
+          password,
           fingerprint,
           typingMetrics: {
             avgKeyDownTime: metrics.avgKeyDownTime,

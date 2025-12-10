@@ -12,6 +12,7 @@ import type {
   OtpSession,
   EnhancedRiskFactors,
   Partner,
+  SmartgateUser,
 } from "@shared/schema";
 import { getRiskLevel, getDecision } from "@shared/schema";
 
@@ -42,6 +43,12 @@ export interface IStorage {
   incrementPartnerStats(partnerId: string, blocked: boolean): Promise<void>;
   getLogsByPartner(partnerId: string): Promise<EventLog[]>;
   getLoginAttemptsByPartner(partnerId: string): Promise<LoginAttempt[]>;
+  // SmartGate Demo methods
+  getSmartgateUser(username: string): Promise<SmartgateUser | undefined>;
+  getSmartgateUserById(id: string): Promise<SmartgateUser | undefined>;
+  createSmartgateUser(user: Omit<SmartgateUser, 'id' | 'createdAt'>): Promise<SmartgateUser>;
+  updateSmartgateUser(id: string, updates: Partial<SmartgateUser>): Promise<SmartgateUser | undefined>;
+  getAllSmartgateUsers(): Promise<SmartgateUser[]>;
 }
 
 const generateAuthUsers = (): AuthUser[] => {
@@ -520,6 +527,41 @@ export class MemStorage implements IStorage {
       hourlyTrend,
     };
   }
+
+  // SmartGate Demo Methods
+  private smartgateUsers: Map<string, SmartgateUser> = new Map([
+    ["sg_001", { id: "sg_001", username: "ahmad", password: "password123", fullName: "أحمد محمد", email: "ahmad@demo.com", primaryDevice: "Unknown", primaryRegion: "Middle East", avgTypingSpeed: 45, createdAt: new Date().toISOString() }],
+    ["sg_002", { id: "sg_002", username: "sara", password: "demo2024", fullName: "سارة العلي", email: "sara@demo.com", primaryDevice: "Unknown", primaryRegion: "Middle East", avgTypingSpeed: 48, createdAt: new Date().toISOString() }],
+    ["sg_003", { id: "sg_003", username: "mohammed", password: "test123", fullName: "محمد خالد", email: "mohammed@demo.com", primaryDevice: "Unknown", primaryRegion: "Middle East", avgTypingSpeed: 42, createdAt: new Date().toISOString() }],
+  ]);
+
+  async getSmartgateUser(username: string): Promise<SmartgateUser | undefined> {
+    return Array.from(this.smartgateUsers.values()).find(u => u.username === username);
+  }
+
+  async getSmartgateUserById(id: string): Promise<SmartgateUser | undefined> {
+    return this.smartgateUsers.get(id);
+  }
+
+  async createSmartgateUser(user: Omit<SmartgateUser, 'id' | 'createdAt'>): Promise<SmartgateUser> {
+    const id = `sg_${randomUUID()}`;
+    const createdAt = new Date().toISOString();
+    const newUser: SmartgateUser = { ...user, id, createdAt };
+    this.smartgateUsers.set(id, newUser);
+    return newUser;
+  }
+
+  async updateSmartgateUser(id: string, updates: Partial<SmartgateUser>): Promise<SmartgateUser | undefined> {
+    const existing = this.smartgateUsers.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates };
+    this.smartgateUsers.set(id, updated);
+    return updated;
+  }
+
+  async getAllSmartgateUsers(): Promise<SmartgateUser[]> {
+    return Array.from(this.smartgateUsers.values());
+  }
 }
 
 export const memStorage = new MemStorage();
@@ -533,8 +575,18 @@ export let storage: IStorage = memStorage;
 export async function initializeStorage() {
   if (process.env.DATABASE_URL) {
     try {
-      await seedDatabase();
-      await ensureEventLogsExist();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Database initialization timeout")), 10000)
+      );
+      
+      await Promise.race([
+        (async () => {
+          await seedDatabase();
+          await ensureEventLogsExist();
+        })(),
+        timeoutPromise
+      ]);
+      
       storage = dbStorage;
       console.log("Using PostgreSQL database storage");
     } catch (error) {
