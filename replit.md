@@ -35,9 +35,21 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **ORM**: Drizzle ORM with PostgreSQL dialect
-- **Schema**: Defined in `shared/schema.ts` using Zod for validation
-- **Migrations**: Drizzle Kit for database migrations (`drizzle-kit push`)
-- **In-Memory Fallback**: Storage interface in `server/storage.ts` with sample data generation
+- **Schema**: Defined in `shared/schema.ts` using Zod for validation (includes pgTable definitions)
+- **Migrations**: Drizzle Kit for database migrations (`npm run db:push`)
+- **Database Connection**: `server/db.ts` creates Drizzle connection pool
+- **Storage Interface**: `server/storage.ts` defines `IStorage` interface
+- **Database Storage**: `server/db-storage.ts` implements `DbStorage` class for persistent PostgreSQL storage
+- **Auto-Seeding**: Database is automatically seeded with test users on first run
+- **Fallback**: Falls back to in-memory storage if DATABASE_URL is not set
+
+### Database Tables
+- **auth_users**: User authentication (id, username, email, password, role, baseline settings)
+- **user_baselines**: User behavioral baselines for fraud detection
+- **event_logs**: Login event history with risk scores
+- **login_attempts**: Detailed login attempt records with fingerprinting data
+- **security_rules**: Configurable risk thresholds
+- **otp_sessions**: One-time password sessions for 2FA challenges
 
 ### Key Design Patterns
 - **Shared Types**: Schema definitions in `shared/` directory used by both client and server
