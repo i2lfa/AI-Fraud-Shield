@@ -12,7 +12,7 @@ import {
   Home,
   Brain,
 } from "lucide-react";
-import logoImage from "@assets/generated_images/shield_with_ai_brain_logo.png";
+import logoImage from "@assets/generated_images/large_ai_shield_dark_background.png";
 import {
   Sidebar,
   SidebarContent,
