@@ -126,3 +126,68 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/admin/model/status` - ML model status and metrics
 - `POST /api/admin/model/retrain` - Force model retrain
 - `GET /api/admin/model/export` - Export model as JSON
+- `GET /api/admin/partners` - List all partners
+- `POST /api/admin/partners` - Register new partner (returns credentials once)
+- `PATCH /api/admin/partners/:id` - Update partner settings
+- `POST /api/admin/partners/:id/rotate-secret` - Rotate partner credentials
+
+## Partner API (Fraud Detection as a Service)
+
+The system functions as an independent "Fraud Detection as a Service" API for partner companies who maintain their own separate user systems. Partners send login behavior data, we return fraud risk analysis.
+
+### Partner Authentication
+Partners authenticate via HTTP Basic Auth:
+```
+Authorization: Basic base64(client_id:client_secret)
+```
+
+### Partner Endpoints
+- `POST /partner/api/analyze` - Analyze login behavior, returns risk score and decision
+- `GET /partner/api/verify` - Verify partner API credentials
+- `GET /partner/api/stats` - Get partner-specific analytics
+
+### Partner Analyze Request
+```json
+{
+  "userIdentifier": "user@example.com",
+  "fingerprint": {
+    "userAgent": "Mozilla/5.0...",
+    "screenResolution": "1920x1080",
+    "timezone": "America/New_York"
+  },
+  "typingMetrics": {
+    "avgKeyDownTime": 80,
+    "avgKeyUpTime": 40,
+    "typingSpeed": 45
+  },
+  "ipAddress": "192.168.1.1"
+}
+```
+
+### Partner Analyze Response
+```json
+{
+  "sessionId": "sess_abc123",
+  "riskScore": 35,
+  "riskLevel": "low",
+  "decision": "allow",
+  "confidence": 80,
+  "factors": {
+    "deviceRisk": 5,
+    "behaviorRisk": 10,
+    "geoRisk": 15,
+    "velocityRisk": 5
+  },
+  "recommendation": "Allow the login to proceed."
+}
+```
+
+### Database Tables (Partner)
+- **partners**: Partner company records (id, name, clientId, clientSecretHash, webhookUrl, isActive, rateLimitPerMinute, totalRequests, blockedRequests)
+- **login_attempts.partnerId**: Foreign key linking attempts to partners
+
+### Partner Portal Page
+- Path: `/partners` (admin only)
+- Manage partner registrations and API credentials
+- View analytics per partner (requests, blocked, etc.)
+- Rotate secrets and activate/deactivate partners
