@@ -563,9 +563,9 @@ export class MemStorage implements IStorage {
 
   // SmartGate Demo Methods
   private smartgateUsers: Map<string, SmartgateUser> = new Map([
-    ["sg_001", { id: "sg_001", username: "ahmad", password: "password123", fullName: "أحمد محمد", email: "ahmad@demo.com", primaryDevice: "Unknown", primaryRegion: "Middle East", avgTypingSpeed: 45, createdAt: new Date().toISOString() }],
-    ["sg_002", { id: "sg_002", username: "sara", password: "demo2024", fullName: "سارة العلي", email: "sara@demo.com", primaryDevice: "Unknown", primaryRegion: "Middle East", avgTypingSpeed: 48, createdAt: new Date().toISOString() }],
-    ["sg_003", { id: "sg_003", username: "mohammed", password: "test123", fullName: "محمد خالد", email: "mohammed@demo.com", primaryDevice: "Unknown", primaryRegion: "Middle East", avgTypingSpeed: 42, createdAt: new Date().toISOString() }],
+    ["sg_001", { id: "sg_001", username: "ahmad", password: "password123", fullName: "Ahmad Mohammed", email: "ahmad@demo.com", primaryDevice: "Unknown", primaryRegion: "North America", avgTypingSpeed: 45, createdAt: new Date().toISOString() }],
+    ["sg_002", { id: "sg_002", username: "sara", password: "demo2024", fullName: "Sara Johnson", email: "sara@demo.com", primaryDevice: "Unknown", primaryRegion: "Europe", avgTypingSpeed: 48, createdAt: new Date().toISOString() }],
+    ["sg_003", { id: "sg_003", username: "john", password: "test123", fullName: "John Smith", email: "john@demo.com", primaryDevice: "Unknown", primaryRegion: "North America", avgTypingSpeed: 42, createdAt: new Date().toISOString() }],
   ]);
 
   async getSmartgateUser(username: string): Promise<SmartgateUser | undefined> {
@@ -609,7 +609,7 @@ export async function initializeStorage() {
   if (process.env.DATABASE_URL) {
     try {
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Database initialization timeout")), 10000)
+        setTimeout(() => reject(new Error("Database initialization timeout")), 30000)
       );
       
       await Promise.race([

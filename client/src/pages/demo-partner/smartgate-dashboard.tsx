@@ -24,7 +24,7 @@ import {
 
 export default function SmartGateDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950">
       <header className="border-b border-blue-800/30 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -32,22 +32,22 @@ export default function SmartGateDashboard() {
               <Landmark className="h-6 w-6 text-white" />
             </div>
             <div>
-              <span className="text-lg font-bold text-white">بوابة الخدمات الذكية</span>
+              <span className="text-lg font-bold text-white">SmartGate</span>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <Button size="icon" variant="ghost" className="text-slate-400 hover:text-white">
+            <Button size="icon" variant="ghost" className="text-slate-400 hover:text-white" data-testid="button-notifications">
               <Bell className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2">
               <User className="h-4 w-4 text-blue-400" />
-              <span className="text-sm text-white">مستخدم تجريبي</span>
+              <span className="text-sm text-white" data-testid="text-username">Demo User</span>
             </div>
             <Link href="/demo/smartgate">
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                <LogOut className="h-4 w-4 ml-2" />
-                خروج
+              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" data-testid="button-logout">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
               </Button>
             </Link>
           </div>
@@ -56,17 +56,17 @@ export default function SmartGateDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">مرحباً بك في لوحة التحكم</h1>
-          <p className="text-slate-400">أنجز معاملاتك الحكومية بسهولة وأمان</p>
+          <h1 className="text-2xl font-bold text-white mb-2" data-testid="text-welcome">Welcome to Your Dashboard</h1>
+          <p className="text-slate-400">Complete your government transactions easily and securely</p>
         </div>
 
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-500/30">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm text-blue-300">المعاملات النشطة</p>
-                  <p className="text-2xl font-bold text-white">3</p>
+                  <p className="text-sm text-blue-300">Active Requests</p>
+                  <p className="text-2xl font-bold text-white" data-testid="stat-active">3</p>
                 </div>
                 <Clock className="h-8 w-8 text-blue-400" />
               </div>
@@ -75,10 +75,10 @@ export default function SmartGateDashboard() {
           
           <Card className="bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-500/30">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm text-green-300">المعاملات المكتملة</p>
-                  <p className="text-2xl font-bold text-white">12</p>
+                  <p className="text-sm text-green-300">Completed</p>
+                  <p className="text-2xl font-bold text-white" data-testid="stat-completed">12</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-400" />
               </div>
@@ -87,10 +87,10 @@ export default function SmartGateDashboard() {
           
           <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-purple-500/30">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm text-purple-300">الفواتير المستحقة</p>
-                  <p className="text-2xl font-bold text-white">2</p>
+                  <p className="text-sm text-purple-300">Pending Bills</p>
+                  <p className="text-2xl font-bold text-white" data-testid="stat-bills">2</p>
                 </div>
                 <Receipt className="h-8 w-8 text-purple-400" />
               </div>
@@ -99,10 +99,10 @@ export default function SmartGateDashboard() {
           
           <Card className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 border-orange-500/30">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm text-orange-300">التنبيهات</p>
-                  <p className="text-2xl font-bold text-white">1</p>
+                  <p className="text-sm text-orange-300">Notifications</p>
+                  <p className="text-2xl font-bold text-white" data-testid="stat-notifications">1</p>
                 </div>
                 <Bell className="h-8 w-8 text-orange-400" />
               </div>
@@ -112,14 +112,14 @@ export default function SmartGateDashboard() {
 
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <div className="md:col-span-2">
-            <h2 className="text-lg font-semibold text-white mb-4">الخدمات السريعة</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Quick Services</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card className="bg-slate-800/50 border-slate-700/50 hover:border-blue-500/50 transition-all cursor-pointer group">
                 <CardContent className="p-4 text-center">
                   <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-500/30 transition-colors">
                     <FileText className="h-6 w-6 text-blue-400" />
                   </div>
-                  <p className="text-sm font-medium text-white">الوثائق</p>
+                  <p className="text-sm font-medium text-white">Documents</p>
                 </CardContent>
               </Card>
               
@@ -128,7 +128,7 @@ export default function SmartGateDashboard() {
                   <div className="h-12 w-12 rounded-xl bg-green-500/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-green-500/30 transition-colors">
                     <Car className="h-6 w-6 text-green-400" />
                   </div>
-                  <p className="text-sm font-medium text-white">المركبات</p>
+                  <p className="text-sm font-medium text-white">Vehicles</p>
                 </CardContent>
               </Card>
               
@@ -137,7 +137,7 @@ export default function SmartGateDashboard() {
                   <div className="h-12 w-12 rounded-xl bg-purple-500/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-500/30 transition-colors">
                     <GraduationCap className="h-6 w-6 text-purple-400" />
                   </div>
-                  <p className="text-sm font-medium text-white">التعليم</p>
+                  <p className="text-sm font-medium text-white">Education</p>
                 </CardContent>
               </Card>
               
@@ -146,7 +146,7 @@ export default function SmartGateDashboard() {
                   <div className="h-12 w-12 rounded-xl bg-red-500/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-red-500/30 transition-colors">
                     <HeartPulse className="h-6 w-6 text-red-400" />
                   </div>
-                  <p className="text-sm font-medium text-white">الصحة</p>
+                  <p className="text-sm font-medium text-white">Health</p>
                 </CardContent>
               </Card>
               
@@ -155,7 +155,7 @@ export default function SmartGateDashboard() {
                   <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-500/30 transition-colors">
                     <Home className="h-6 w-6 text-orange-400" />
                   </div>
-                  <p className="text-sm font-medium text-white">الإسكان</p>
+                  <p className="text-sm font-medium text-white">Housing</p>
                 </CardContent>
               </Card>
               
@@ -164,14 +164,14 @@ export default function SmartGateDashboard() {
                   <div className="h-12 w-12 rounded-xl bg-teal-500/20 flex items-center justify-center mx-auto mb-3 group-hover:bg-teal-500/30 transition-colors">
                     <Briefcase className="h-6 w-6 text-teal-400" />
                   </div>
-                  <p className="text-sm font-medium text-white">الأعمال</p>
+                  <p className="text-sm font-medium text-white">Business</p>
                 </CardContent>
               </Card>
             </div>
           </div>
           
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">المعاملات الأخيرة</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Recent Transactions</h2>
             <Card className="bg-slate-800/50 border-slate-700/50">
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-3">
@@ -179,8 +179,8 @@ export default function SmartGateDashboard() {
                     <CheckCircle className="h-5 w-5 text-green-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-white">تجديد الاستمارة</p>
-                    <p className="text-xs text-slate-400">مكتمل - قبل 3 أيام</p>
+                    <p className="text-sm font-medium text-white">Registration Renewal</p>
+                    <p className="text-xs text-slate-400">Completed - 3 days ago</p>
                   </div>
                 </div>
                 
@@ -189,8 +189,8 @@ export default function SmartGateDashboard() {
                     <Clock className="h-5 w-5 text-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-white">شهادة حسن سيرة</p>
-                    <p className="text-xs text-slate-400">قيد المعالجة</p>
+                    <p className="text-sm font-medium text-white">Good Conduct Certificate</p>
+                    <p className="text-xs text-slate-400">Processing</p>
                   </div>
                 </div>
                 
@@ -199,8 +199,8 @@ export default function SmartGateDashboard() {
                     <CheckCircle className="h-5 w-5 text-green-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-white">تحديث العنوان</p>
-                    <p className="text-xs text-slate-400">مكتمل - قبل أسبوع</p>
+                    <p className="text-sm font-medium text-white">Address Update</p>
+                    <p className="text-xs text-slate-400">Completed - 1 week ago</p>
                   </div>
                 </div>
               </CardContent>
@@ -210,19 +210,19 @@ export default function SmartGateDashboard() {
 
         <Card className="bg-slate-800/30 border-blue-500/20">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                 <Shield className="h-8 w-8 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-white">حسابك محمي بـ AI Fraud Shield</h3>
+                <h3 className="font-semibold text-white">Your Account is Protected by AI Fraud Shield</h3>
                 <p className="text-sm text-slate-400">
-                  يتم مراقبة جميع عمليات الدخول والمعاملات لحماية حسابك من الاحتيال
+                  All login attempts and transactions are monitored to protect your account from fraud
                 </p>
               </div>
               <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                <CheckCircle className="h-3 w-3 ml-1" />
-                نشط
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Active
               </Badge>
             </div>
           </CardContent>
@@ -230,9 +230,9 @@ export default function SmartGateDashboard() {
 
         <div className="mt-8 text-center">
           <Link href="/demo/smartgate">
-            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800">
-              <ArrowLeft className="h-4 w-4 ml-2" />
-              العودة للصفحة الرئيسية
+            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800" data-testid="button-back-home">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
             </Button>
           </Link>
         </div>
@@ -241,8 +241,8 @@ export default function SmartGateDashboard() {
       <footer className="border-t border-slate-800 py-6 mt-8">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-slate-500">
-            © 2024 بوابة الخدمات الذكية - موقع تجريبي
-            <span className="text-blue-400 mr-2">| محمي بواسطة AI Fraud Shield</span>
+            2024 SmartGate - Demo Website
+            <span className="text-blue-400 ml-2">| Protected by AI Fraud Shield</span>
           </p>
         </div>
       </footer>

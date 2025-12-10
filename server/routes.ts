@@ -1772,13 +1772,13 @@ export async function registerRoutes(
         (typingMetrics?.typingSpeed ? 1 : 0)
       ) / 4 * 100);
 
-      let recommendation = "تم السماح بتسجيل الدخول";
+      let recommendation = "Login allowed";
       if (decision === "block") {
-        recommendation = "تم رفض الدخول - تم اكتشاف نشاط مشبوه";
+        recommendation = "Access denied - Suspicious activity detected";
       } else if (decision === "challenge") {
-        recommendation = "مطلوب تحقق إضافي من هويتك";
+        recommendation = "Additional identity verification required";
       } else if (decision === "alert") {
-        recommendation = "تم السماح مع مراقبة الجلسة";
+        recommendation = "Access granted with session monitoring";
       }
 
       const sessionId = `demo_${randomUUID()}`;

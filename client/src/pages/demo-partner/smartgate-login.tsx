@@ -50,7 +50,7 @@ function OtpVerification({
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
-      setError("الرمز يجب أن يكون 6 أرقام");
+      setError("Code must be 6 digits");
       return;
     }
 
@@ -68,15 +68,15 @@ function OtpVerification({
 
       if (result.success) {
         toast({
-          title: "تم التحقق بنجاح",
-          description: "جاري تحويلك للوحة التحكم",
+          title: "Verification Successful",
+          description: "Redirecting to dashboard",
         });
         setTimeout(onSuccess, 1000);
       } else {
-        setError(result.error || "رمز التحقق غير صحيح");
+        setError(result.error || "Invalid verification code");
       }
     } catch (err) {
-      setError("حدث خطأ في التحقق");
+      setError("Verification error occurred");
     } finally {
       setIsVerifying(false);
     }
@@ -87,21 +87,20 @@ function OtpVerification({
       <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 text-center">
         <Shield className="h-8 w-8 text-blue-400 mx-auto mb-2" />
         <p className="text-sm text-slate-300">
-          تم إرسال رمز التحقق إلى بريدك الإلكتروني
+          A verification code has been sent to your email
         </p>
         <p className="text-xs text-slate-400 mt-1">
-          يرجى إدخال الرمز المكون من 6 أرقام
+          Please enter the 6-digit code
         </p>
       </div>
 
       <Input 
-        placeholder="أدخل رمز التحقق"
+        placeholder="Enter verification code"
         value={otp}
         onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
         className="bg-slate-700/50 border-slate-600 text-white text-center text-2xl tracking-widest"
         data-testid="input-otp"
         maxLength={6}
-        dir="ltr"
       />
 
       {error && (
@@ -116,11 +115,11 @@ function OtpVerification({
       >
         {isVerifying ? (
           <>
-            <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-            جاري التحقق...
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Verifying...
           </>
         ) : (
-          "تأكيد الرمز"
+          "Confirm Code"
         )}
       </Button>
 
@@ -130,7 +129,7 @@ function OtpVerification({
         onClick={onRetry}
         data-testid="button-back"
       >
-        العودة لتسجيل الدخول
+        Back to Login
       </Button>
     </div>
   );
@@ -140,7 +139,7 @@ export default function SmartGateLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const [nationalId, setNationalId] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -202,7 +201,7 @@ export default function SmartGateLogin() {
     }
 
     const totalTime = (Date.now() - startTimeRef.current) / 1000 / 60;
-    const typingSpeed = Math.round((nationalId.length + password.length) / Math.max(totalTime, 0.1));
+    const typingSpeed = Math.round((username.length + password.length) / Math.max(totalTime, 0.1));
 
     return {
       keyDownTimes,
@@ -220,10 +219,10 @@ export default function SmartGateLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nationalId || !password) {
+    if (!username || !password) {
       toast({
-        title: "خطأ",
-        description: "يرجى إدخال رقم الهوية وكلمة المرور",
+        title: "Error",
+        description: "Please enter username and password",
         variant: "destructive",
       });
       return;
@@ -239,7 +238,7 @@ export default function SmartGateLogin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userIdentifier: nationalId,
+          userIdentifier: username,
           password,
           fingerprint,
           typingMetrics: {
@@ -261,8 +260,8 @@ export default function SmartGateLogin() {
       }
     } catch (error) {
       toast({
-        title: "خطأ في الاتصال",
-        description: "حدث خطأ أثناء التحقق من بياناتك",
+        title: "Connection Error",
+        description: "An error occurred while verifying your credentials",
         variant: "destructive",
       });
     } finally {
@@ -292,23 +291,16 @@ export default function SmartGateLogin() {
 
   const getDecisionText = (decision: string) => {
     switch (decision) {
-      case "allow": return "تم السماح بالدخول";
-      case "alert": return "تم السماح مع المراقبة";
-      case "challenge": return "مطلوب تحقق إضافي";
-      case "block": return "تم رفض الدخول";
-      default: return "جاري التحقق";
+      case "allow": return "Access Granted";
+      case "alert": return "Access Granted with Monitoring";
+      case "challenge": return "Additional Verification Required";
+      case "block": return "Access Denied";
+      default: return "Verifying";
     }
   };
 
-  const getRiskColor = (score: number) => {
-    if (score <= 25) return "from-green-500 to-green-600";
-    if (score <= 50) return "from-yellow-500 to-yellow-600";
-    if (score <= 75) return "from-orange-500 to-orange-600";
-    return "from-red-500 to-red-600";
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-900 to-indigo-950 flex flex-col">
       <header className="border-b border-blue-800/30 bg-slate-900/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/demo/smartgate">
@@ -317,14 +309,14 @@ export default function SmartGateLogin() {
                 <Landmark className="h-7 w-7 text-white" />
               </div>
               <div>
-                <span className="text-xl font-bold text-white">بوابة الخدمات الذكية</span>
-                <p className="text-xs text-blue-400">SmartGate</p>
+                <span className="text-xl font-bold text-white">SmartGate</span>
+                <p className="text-xs text-blue-400">Smart Services Portal</p>
               </div>
             </div>
           </Link>
           <Badge variant="outline" className="border-blue-500/50 text-blue-400">
-            <Shield className="h-3 w-3 ml-1" />
-            محمي بـ AI Fraud Shield
+            <Shield className="h-3 w-3 mr-1" />
+            Protected by AI Fraud Shield
           </Badge>
         </div>
       </header>
@@ -337,47 +329,46 @@ export default function SmartGateLogin() {
                 <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mx-auto mb-4">
                   <Landmark className="h-9 w-9 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-white">تسجيل الدخول</CardTitle>
+                <CardTitle className="text-2xl text-white">Sign In</CardTitle>
                 <CardDescription className="text-slate-400">
-                  أدخل بياناتك للوصول لخدماتك الإلكترونية
+                  Enter your credentials to access your services
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="nationalId" className="text-slate-300">رقم الهوية</Label>
+                    <Label htmlFor="username" className="text-slate-300">Username</Label>
                     <Input
-                      id="nationalId"
+                      id="username"
                       type="text"
-                      placeholder="أدخل رقم الهوية"
-                      value={nationalId}
-                      onChange={(e) => setNationalId(e.target.value)}
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       onKeyDown={handleKeyDown}
                       onKeyUp={handleKeyUp}
-                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500 text-right"
-                      data-testid="input-national-id"
-                      dir="ltr"
+                      className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                      data-testid="input-username"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-slate-300">كلمة المرور</Label>
+                    <Label htmlFor="password" className="text-slate-300">Password</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="أدخل كلمة المرور"
+                        placeholder="Enter your password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={handleKeyDown}
                         onKeyUp={handleKeyUp}
-                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500 pl-10"
+                        className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500 pr-10"
                         data-testid="input-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -392,23 +383,23 @@ export default function SmartGateLogin() {
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                        جاري التحقق...
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Verifying...
                       </>
                     ) : (
                       <>
+                        Sign In
                         <ArrowRight className="h-4 w-4 ml-2" />
-                        تسجيل الدخول
                       </>
                     )}
                   </Button>
 
                   <div className="text-center space-y-2">
                     <a href="#" className="text-sm text-blue-400 hover:underline block">
-                      نسيت كلمة المرور؟
+                      Forgot Password?
                     </a>
                     <a href="#" className="text-sm text-slate-400 hover:text-white block">
-                      إنشاء حساب جديد
+                      Create New Account
                     </a>
                   </div>
                 </form>
@@ -424,7 +415,7 @@ export default function SmartGateLogin() {
                   </h2>
                   {analysis?.user?.fullName && (
                     <p className="text-white mt-3 text-lg">
-                      مرحباً، {analysis.user.fullName}
+                      Welcome, {analysis.user.fullName}
                     </p>
                   )}
                   <p className="text-slate-400 mt-2">
@@ -435,8 +426,8 @@ export default function SmartGateLogin() {
                 <div className="space-y-6">
                   {(analysis?.decision === "allow" || analysis?.decision === "alert") && (
                     <div className="text-center text-sm text-slate-400">
-                      <Loader2 className="h-4 w-4 animate-spin inline ml-2" />
-                      جاري التحويل للوحة التحكم...
+                      <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                      Redirecting to dashboard...
                     </div>
                   )}
 
@@ -452,7 +443,7 @@ export default function SmartGateLogin() {
                       }}
                       data-testid="button-retry"
                     >
-                      المحاولة مرة أخرى
+                      Try Again
                     </Button>
                   )}
 
@@ -474,7 +465,7 @@ export default function SmartGateLogin() {
           )}
 
           <p className="text-center text-xs text-slate-500 mt-6">
-            هذا موقع تجريبي لعرض كيفية عمل نظام كشف الاحتيال
+            This is a demo website showing how the fraud detection system works
           </p>
         </div>
       </main>
