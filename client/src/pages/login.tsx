@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, User, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import logoImage from "@assets/generated_images/simple_shield_security_logo.png";
+import logoImage from "@assets/generated_images/shield_with_ai_brain_logo.png";
 
 interface TypingMetrics {
   avgKeyDownTime: number;
