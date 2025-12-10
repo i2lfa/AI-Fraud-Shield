@@ -191,3 +191,25 @@ Authorization: Basic base64(client_id:client_secret)
 - Manage partner registrations and API credentials
 - View analytics per partner (requests, blocked, etc.)
 - Rotate secrets and activate/deactivate partners
+
+## Demo Partner Website (SmartGate)
+
+A complete demo showcasing how partners integrate with AI Fraud Shield.
+
+### Demo Pages
+- `/demo/smartgate` - Landing page (بوابة الخدمات الذكية - Smart Services Portal)
+- `/demo/smartgate/login` - Login with fingerprint/typing collection
+- `/demo/smartgate/dashboard` - User dashboard after successful login
+
+### Demo Flow
+1. User visits landing page, clicks login
+2. Login page collects fingerprint (userAgent, screen, timezone) and typing metrics
+3. On submit, frontend calls `/api/demo/smartgate/analyze`
+4. Backend runs full fraud analysis (ML model, device/geo/behavior scoring)
+5. Returns risk score, decision, and factors in Arabic
+6. If allow/alert: redirects to dashboard. If challenge: shows OTP. If block: shows error
+
+### Demo API Endpoint
+- `POST /api/demo/smartgate/analyze` - Simulates partner integration
+- No authentication required (demo only)
+- Uses same fraud detection logic as Partner API
