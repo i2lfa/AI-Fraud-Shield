@@ -457,4 +457,26 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const memStorage = new MemStorage();
+
+import { DbStorage, seedDatabase } from "./db-storage";
+
+export const dbStorage = new DbStorage();
+
+export let storage: IStorage = memStorage;
+
+export async function initializeStorage() {
+  if (process.env.DATABASE_URL) {
+    try {
+      await seedDatabase();
+      storage = dbStorage;
+      console.log("Using PostgreSQL database storage");
+    } catch (error) {
+      console.error("Failed to initialize database, falling back to memory storage:", error);
+      storage = memStorage;
+    }
+  } else {
+    console.log("Using in-memory storage (no DATABASE_URL)");
+    storage = memStorage;
+  }
+}
