@@ -1,4 +1,105 @@
 import { z } from "zod";
+import { pgTable, text, integer, boolean, jsonb, serial } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+
+// Database Tables
+export const authUsersTable = pgTable("auth_users", {
+  id: text("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull(),
+  password: text("password").notNull(),
+  role: text("role").notNull().default("user"),
+  primaryDevice: text("primary_device").notNull().default("Unknown"),
+  primaryRegion: text("primary_region").notNull().default("Unknown"),
+  avgTypingSpeed: integer("avg_typing_speed").notNull().default(45),
+  typicalLoginWindowStart: integer("typical_login_window_start").notNull().default(8),
+  typicalLoginWindowEnd: integer("typical_login_window_end").notNull().default(18),
+  lastLoginIp: text("last_login_ip"),
+  lastLoginTime: text("last_login_time"),
+  lastLoginGeo: text("last_login_geo"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const userBaselinesTable = pgTable("user_baselines", {
+  id: text("id").primaryKey(),
+  username: text("username").notNull(),
+  email: text("email").notNull(),
+  primaryDevice: text("primary_device").notNull(),
+  primaryRegion: text("primary_region").notNull(),
+  avgTypingSpeed: integer("avg_typing_speed").notNull().default(45),
+  typicalLoginWindowStart: integer("typical_login_window_start").notNull().default(8),
+  typicalLoginWindowEnd: integer("typical_login_window_end").notNull().default(18),
+  riskHistory: jsonb("risk_history").notNull().default([]),
+  createdAt: text("created_at").notNull(),
+});
+
+export const eventLogsTable = pgTable("event_logs", {
+  id: text("id").primaryKey(),
+  timestamp: text("timestamp").notNull(),
+  userId: text("user_id").notNull(),
+  username: text("username").notNull(),
+  device: text("device").notNull(),
+  deviceType: text("device_type").notNull(),
+  geo: text("geo").notNull(),
+  region: text("region").notNull(),
+  ip: text("ip").notNull(),
+  riskScore: integer("risk_score").notNull(),
+  riskLevel: text("risk_level").notNull(),
+  decision: text("decision").notNull(),
+  breakdown: jsonb("breakdown").notNull(),
+  reason: text("reason").notNull(),
+  latency: integer("latency").notNull(),
+});
+
+export const securityRulesTable = pgTable("security_rules", {
+  id: serial("id").primaryKey(),
+  blockThreshold: integer("block_threshold").notNull().default(80),
+  challengeThreshold: integer("challenge_threshold").notNull().default(60),
+  alertThreshold: integer("alert_threshold").notNull().default(40),
+  allowThreshold: integer("allow_threshold").notNull().default(0),
+  enableAutoBlock: boolean("enable_auto_block").notNull().default(true),
+  enableChallenge: boolean("enable_challenge").notNull().default(true),
+  enableAlerts: boolean("enable_alerts").notNull().default(true),
+});
+
+export const loginAttemptsTable = pgTable("login_attempts", {
+  id: text("id").primaryKey(),
+  timestamp: text("timestamp").notNull(),
+  userId: text("user_id"),
+  username: text("username").notNull(),
+  ip: text("ip").notNull(),
+  device: text("device").notNull(),
+  deviceType: text("device_type").notNull(),
+  geo: text("geo").notNull(),
+  region: text("region").notNull(),
+  fingerprint: jsonb("fingerprint"),
+  riskScore: integer("risk_score").notNull(),
+  riskLevel: text("risk_level").notNull(),
+  decision: text("decision").notNull(),
+  breakdown: jsonb("breakdown").notNull(),
+  enhancedFactors: jsonb("enhanced_factors"),
+  reason: text("reason").notNull(),
+  success: boolean("success").notNull(),
+  requiresOtp: boolean("requires_otp").notNull(),
+  loginSource: text("login_source").notNull(),
+  hiddenReason: text("hidden_reason").notNull(),
+});
+
+export const otpSessionsTable = pgTable("otp_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  code: text("code").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  verified: boolean("verified").notNull().default(false),
+  attempts: integer("attempts").notNull().default(0),
+});
+
+export type AuthUserRow = typeof authUsersTable.$inferSelect;
+export type UserBaselineRow = typeof userBaselinesTable.$inferSelect;
+export type EventLogRow = typeof eventLogsTable.$inferSelect;
+export type SecurityRulesRow = typeof securityRulesTable.$inferSelect;
+export type LoginAttemptRow = typeof loginAttemptsTable.$inferSelect;
+export type OtpSessionRow = typeof otpSessionsTable.$inferSelect;
 
 export type RiskLevel = "critical" | "high" | "medium" | "low" | "safe";
 export type Decision = "block" | "challenge" | "alert" | "allow";
