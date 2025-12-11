@@ -14,7 +14,7 @@ import {
 import { RiskBadge, DecisionBadge, RiskScore } from "@/components/risk-badge";
 import { RiskBreakdownCard } from "@/components/risk-breakdown";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
+import {
   RotateCcw,
   Monitor,
   Smartphone,
@@ -23,9 +23,12 @@ import {
   Keyboard,
   Clock,
   AlertTriangle,
-  Zap
+  Zap,
 } from "lucide-react";
-import type { RiskCalculationResponse, SimulationRequest } from "@shared/schema";
+import type {
+  RiskCalculationResponse,
+  SimulationRequest,
+} from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
 const DEVICES = [
@@ -90,9 +93,9 @@ export default function RiskSimulator() {
   };
 
   const handleDeviceChange = (value: string) => {
-    const device = DEVICES.find(d => d.value === value);
+    const device = DEVICES.find((d) => d.value === value);
     if (device) {
-      setParams(prev => ({
+      setParams((prev) => ({
         ...prev,
         device: value,
         deviceType: device.type,
@@ -101,9 +104,9 @@ export default function RiskSimulator() {
   };
 
   const handleRegionChange = (value: string) => {
-    const region = REGIONS.find(r => r.value === value);
+    const region = REGIONS.find((r) => r.value === value);
     if (region) {
-      setParams(prev => ({
+      setParams((prev) => ({
         ...prev,
         region: value,
         geo: region.label,
@@ -121,8 +124,12 @@ export default function RiskSimulator() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Risk Simulator</h1>
-          <p className="text-sm text-muted-foreground">Test login scenarios and see real-time risk analysis</p>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Risk Simulator
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Test login scenarios and see real-time risk analysis
+          </p>
         </div>
         <Button
           variant="outline"
@@ -148,10 +155,7 @@ export default function RiskSimulator() {
                 <Monitor className="h-4 w-4 text-muted-foreground" />
                 Device
               </Label>
-              <Select
-                value={params.device}
-                onValueChange={handleDeviceChange}
-              >
+              <Select value={params.device} onValueChange={handleDeviceChange}>
                 <SelectTrigger data-testid="select-device">
                   <SelectValue placeholder="Select device" />
                 </SelectTrigger>
@@ -170,10 +174,7 @@ export default function RiskSimulator() {
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 Geographic Region
               </Label>
-              <Select
-                value={params.region}
-                onValueChange={handleRegionChange}
-              >
+              <Select value={params.region} onValueChange={handleRegionChange}>
                 <SelectTrigger data-testid="select-region">
                   <SelectValue placeholder="Select region" />
                 </SelectTrigger>
@@ -199,7 +200,9 @@ export default function RiskSimulator() {
               </div>
               <Slider
                 value={[params.typingSpeed]}
-                onValueChange={([value]) => setParams(prev => ({ ...prev, typingSpeed: value }))}
+                onValueChange={([value]) =>
+                  setParams((prev) => ({ ...prev, typingSpeed: value }))
+                }
                 min={10}
                 max={120}
                 step={1}
@@ -224,7 +227,9 @@ export default function RiskSimulator() {
               </div>
               <Slider
                 value={[params.loginAttempts]}
-                onValueChange={([value]) => setParams(prev => ({ ...prev, loginAttempts: value }))}
+                onValueChange={([value]) =>
+                  setParams((prev) => ({ ...prev, loginAttempts: value }))
+                }
                 min={1}
                 max={10}
                 step={1}
@@ -249,7 +254,9 @@ export default function RiskSimulator() {
               </div>
               <Slider
                 value={[params.loginTime]}
-                onValueChange={([value]) => setParams(prev => ({ ...prev, loginTime: value }))}
+                onValueChange={([value]) =>
+                  setParams((prev) => ({ ...prev, loginTime: value }))
+                }
                 min={0}
                 max={23}
                 step={1}
@@ -267,14 +274,18 @@ export default function RiskSimulator() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Risk Assessment Result</CardTitle>
+              <CardTitle className="text-base">
+                Risk Assessment Result
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {isSimulating || !result ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-4">
                     <div className="h-16 w-16 animate-pulse rounded-full bg-muted" />
-                    <span className="text-sm text-muted-foreground">Calculating risk...</span>
+                    <span className="text-sm text-muted-foreground">
+                      Calculating risk...
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -282,32 +293,44 @@ export default function RiskSimulator() {
                   <div className="flex items-center justify-center gap-8 py-4">
                     <div className="flex flex-col items-center gap-2">
                       <RiskScore score={result.score} size="lg" />
-                      <span className="text-sm text-muted-foreground">Risk Score</span>
+                      <span className="text-sm text-muted-foreground">
+                        Risk Score
+                      </span>
                     </div>
                     <div className="h-16 w-px bg-border" />
                     <div className="flex flex-col items-center gap-2">
-                      <RiskBadge level={result.level} className="text-sm px-4 py-1" />
-                      <span className="text-sm text-muted-foreground">Risk Level</span>
+                      <RiskBadge
+                        level={result.level}
+                        className="text-sm px-4 py-1"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        Risk Level
+                      </span>
                     </div>
                     <div className="h-16 w-px bg-border" />
                     <div className="flex flex-col items-center gap-2">
-                      <DecisionBadge decision={result.decision} className="text-sm px-4 py-1" />
-                      <span className="text-sm text-muted-foreground">Decision</span>
+                      <DecisionBadge
+                        decision={result.decision}
+                        className="text-sm px-4 py-1"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        Decision
+                      </span>
                     </div>
                   </div>
 
                   <div className="rounded-md bg-muted/50 p-4">
                     <h4 className="text-sm font-medium mb-2">Explanation</h4>
-                    <p className="text-sm text-muted-foreground">{result.explanation}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {result.explanation}
+                    </p>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {result && (
-            <RiskBreakdownCard breakdown={result.breakdown} />
-          )}
+          {result && <RiskBreakdownCard breakdown={result.breakdown} />}
         </div>
       </div>
     </div>
