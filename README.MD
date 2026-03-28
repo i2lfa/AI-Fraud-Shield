@@ -1,5 +1,5 @@
 AI-Fraud-Shield
-This repository is a public demo version created for presentation and portfolio purposes only. The full implementation, core logic, and detection algorithms are maintained in a private repository. Project Overview
+This repository is a public  version created for presentation and portfolio purposes only. The full implementation, core logic, and detection algorithms . Project Overview
 
 AI Fraud Shield is an AI-powered security system designed to protect user accounts from modern cyber threats by moving beyond traditional authentication methods.
 
